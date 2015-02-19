@@ -1,8 +1,9 @@
 #ifndef BASISSET_H
 #define BASISSET_H
 
-#include <vector>
 #include <cstddef>
+#include <memory>
+#include <vector>
 #include <string>
 #include "am.h"
 
@@ -212,6 +213,9 @@ public:
 
     /// Default constructor, no initialization
     SBasisSet() {}
+
+    /// Build a null SBasisSet (for use in DF)
+    std::shared_ptr<SBasisSet> zero_basis();
 
     // => Accessors <= //
 

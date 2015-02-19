@@ -1,4 +1,3 @@
-#include <libcore/basisset.h>
 #include "int2c.h"
 
 namespace libgaussian {
@@ -6,7 +5,7 @@ namespace libgaussian {
 Int2C::Int2C(
     const std::shared_ptr<SBasisSet>& basis1,
     const std::shared_ptr<SBasisSet>& basis2,
-    int deriv = 0) :
+    int deriv) :
     basis1_(basis1),
     basis2_(basis2),
     deriv_(deriv)
@@ -23,7 +22,7 @@ Int2C::Int2C()
     buffer1_ = nullptr;
     buffer2_ = nullptr;
 }
-virtual Int2C::~Int2C()
+Int2C::~Int2C()
 {
     if (buffer1_ != nullptr) delete[] buffer1_;
     if (buffer2_ != nullptr) delete[] buffer2_;
@@ -44,19 +43,19 @@ void Int2C::compute_shell(
     size_t shell1,
     size_t shell2)
 {
-    compute_shell(basis1->shell(shell1),basis2->shell(shell2));
+    compute_shell(basis1_->shell(shell1),basis2_->shell(shell2));
 }
 void Int2C::compute_shell1(
     size_t shell1,
     size_t shell2)
 {
-    compute_shell1(basis1->shell(shell1),basis2->shell(shell2));
+    compute_shell1(basis1_->shell(shell1),basis2_->shell(shell2));
 }
 void Int2C::compute_shell2(
     size_t shell1,
     size_t shell2)
 {
-    compute_shell2(basis1->shell(shell1),basis2->shell(shell2));
+    compute_shell2(basis1_->shell(shell1),basis2_->shell(shell2));
 }
 void Int2C::compute_shell(
     const SGaussianShell& sh1,

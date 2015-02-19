@@ -3,11 +3,9 @@
 
 #include <cstddef>
 #include <memory>
+#include <libcore/basisset.h>
 
 namespace libgaussian {
-
-class SBasisSet;
-class SGaussianShell;
 
 /**!
  * Class Int4C provides a common interface for the low-level computation of
@@ -57,10 +55,10 @@ public:
         int deriv = 0);
 
     /// Default constructor, no initialization (except nullptr buffers)
-    Int4C() {}
+    Int4C();
 
     /// Virtual destructor (deletes buffers if needed)
-    virtual ~Int4C() {}
+    virtual ~Int4C();
 
     // => Accessors <= //
 
@@ -88,7 +86,7 @@ public:
     // => Low-Level Computers <= //
 
     /// Compute the integrals (throws if not implemented)
-    void compute_shell0(
+    void compute_shell(
         size_t shell1, 
         size_t shell2,
         size_t shell3,
@@ -134,8 +132,9 @@ protected:
     int deriv_;
     /// Buffer for integrals, target (subclass allocates, super destroys)
     double* buffer1_;
-    /// Buffer for AO->SO transformations (subclass allocates, super destroys)
+    /// Buffer for CO->SO transformations (subclass allocates, super destroys)
     double* buffer2_;
+    /// Internal CO->SO transformation information
     std::vector<SAngularMomentum> am_info_;    
 
 };
@@ -193,6 +192,10 @@ public:
         const SGaussianShell& sh4) override;
 
 protected:   
+
+    double a_;
+    double b_;
+    double w_;
 
 };
 

@@ -2,6 +2,7 @@
 #define MOLECULE_H
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -172,7 +173,20 @@ public:
     // => Methods <= //
 
     /// Return the nuclear repulsion energy in au for this molecule
-    double nuclear_repulsion_energy() const;
+    double nuclear_repulsion_energy(
+        double a = 1.0,
+        double b = 0.0,
+        double w = 0.0,
+        bool use_nuclear = true) const;
+
+    /// Return the nuclear repulsion energy in au between this and other molecule
+    double nuclear_repulsion_energy(
+        const std::shared_ptr<SMolecule>& other,
+        double a = 1.0,
+        double b = 0.0,
+        double w = 0.0,
+        bool use_nuclear_this = true,
+        bool use_nuclear_other = true) const;
      
 private:
     std::string name_;

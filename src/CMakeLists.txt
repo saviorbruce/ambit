@@ -14,6 +14,8 @@ set(TENSOR_HEADERS
     libgaussian/libcore/molecule.h
     libgaussian/libcore/basisset.h
     libgaussian/libcore/am.h
+    libgaussian/libmints/int2c.h
+    libgaussian/libmints/int4c.h
 )
 
 set(TENSOR_SOURCES
@@ -35,6 +37,14 @@ set(TENSOR_SOURCES
     libgaussian/libcore/molecule.cc
     libgaussian/libcore/basisset.cc
     libgaussian/libcore/am.cc
+    libgaussian/libmints/int2c.cc
+    libgaussian/libmints/overlap2c.cc
+    libgaussian/libmints/dipole2c.cc
+    libgaussian/libmints/quadrupole2c.cc
+    libgaussian/libmints/kinetic2c.cc
+    libgaussian/libmints/potential2c.cc
+    libgaussian/libmints/int4c.cc
+    libgaussian/libmints/potential4c.cc
 )
 
 # if we have MPI and Cyclops is enabled

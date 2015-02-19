@@ -40,6 +40,25 @@ SBasisSet::SBasisSet(
 
     am_info_ = SAngularMomentum::build(max_am());
 }
+std::shared_ptr<SBasisSet> SBasisSet::zero_basis()
+{
+    SGaussianShell zero(
+        0.0,
+        0.0,
+        0.0,
+        false,
+        0,
+        {1.0},
+        {0.0},
+        0,
+        0,
+        0,
+        0);
+
+    std::vector<std::vector<SGaussianShell> > shells = {{zero}};
+
+    return std::shared_ptr<SBasisSet>(new SBasisSet("0", shells));  
+}
 bool SBasisSet::has_spherical() const 
 {
     for (size_t ind = 0; ind < shells_.size(); ind++) {

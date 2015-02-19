@@ -4,10 +4,10 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
+#include <libcore/basisset.h>
 
 namespace libgaussian {
 
-class SBasisSet;
 class SMolecule;
 
 /**!
@@ -132,8 +132,9 @@ protected:
     int deriv_;
     /// Buffer for integrals, target (subclass allocates, super destroys)
     double* buffer1_;
-    /// Buffer for AO->SO transformations (subclass allocates, super destroys)
+    /// Buffer for CO->SO transformations (subclass allocates, super destroys)
     double* buffer2_;
+    /// Internal CO->SO transformation information
     std::vector<SAngularMomentum> am_info_;    
 
     double x_;
@@ -299,16 +300,24 @@ public:
     double b() const { return b_; }
     double w() const { return w_; }
 
+    /// x positions of the point charges in au
     std::vector<double>& xs() { return xs_; }
+    /// y positions of the point charges in au
     std::vector<double>& ys() { return ys_; }
+    /// z positions of the point charges in au
     std::vector<double>& zs() { return zs_; }
+    /// Charges of the point charges in au
     std::vector<double>& Zs() { return Zs_; }
 
+    /**!
+     * Set a potential from a SMolecule object
+     *
+     * @param mol the molecule to set the charge field and indexing to
+     * @param use_nuclear use the nuclear charges or total charges?
+     **/
     void set_nuclear_potential(
-        const std::shared_ptr<SMolecule>& mol);
-
-    void set_charge_potential(
-        const std::shared_ptr<SMolecule>& mol);
+        const std::shared_ptr<SMolecule>& mol,
+        bool use_nuclear = true);
 
     void compute_shell(
         const SGaussianShell& sh1, 
