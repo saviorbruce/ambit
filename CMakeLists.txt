@@ -89,6 +89,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(
     ${PROJECT_BINARY_DIR}/include
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src/libgaussian
 )
 
 if(ENABLE_CYCLOPS AND CYCLOPS)
@@ -108,6 +109,9 @@ add_subdirectory(test)
 
 # sample suite
 add_subdirectory(samples)
+
+# sample2 suite
+add_subdirectory(samples2)
 
 # this has to be the very last CMake module to be included
 include(ConfigInfo)

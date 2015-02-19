@@ -11,6 +11,9 @@ set(TENSOR_HEADERS
     tensor/macros.h
     tensor/memory.h
     tensor/tensorimpl.h
+    libgaussian/libcore/molecule.h
+    libgaussian/libcore/basisset.h
+    libgaussian/libcore/am.h
 )
 
 set(TENSOR_SOURCES
@@ -29,6 +32,9 @@ set(TENSOR_SOURCES
     tensor/sliced_tensor.cc
     tensor/tensor.cc
     tensor/tensorimpl.cc
+    libgaussian/libcore/molecule.cc
+    libgaussian/libcore/basisset.cc
+    libgaussian/libcore/am.cc
 )
 
 # if we have MPI and Cyclops is enabled
