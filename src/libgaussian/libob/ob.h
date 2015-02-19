@@ -159,6 +159,7 @@ public:
         Tensor& V,
         const std::shared_ptr<Molecule> mol,
         double scale = 1.0,
+        bool use_nuclear = true,
         double a = 1.0,
         double b = 0.0,
         double w = 0.0);
@@ -169,10 +170,10 @@ public:
         const std::vector<double>& y,
         const std::vector<double>& z,
         const std::vector<double>& Z,
-        double scale = 1.0,
         double a = 1.0,
         double b = 0.0,
-        double w = 0.0);
+        double w = 0.0,
+        double scale = 1.0);
 
     virtual void compute_ESP(
         const Tensor& D,
@@ -180,10 +181,10 @@ public:
         const std::vector<double>& x,
         const std::vector<double>& y,
         const std::vector<double>& z,
-        double scale = 1.0,
         double a = 1.0,
         double b = 0.0,
-        double w = 0.0);
+        double w = 0.0,
+        double scale = 1.0);
          
     // > Gradients < //
 
@@ -199,6 +200,10 @@ public:
         const Tensor& D,
         Tensor& V,
         const std::shared_ptr<Molecule> mol,
+        bool use_nuclear = true,
+        double a = 1.0,
+        double b = 0.0,
+        double w = 0.0,
         double scale = 1.0);
     
     // > Hessians < //
@@ -215,9 +220,12 @@ public:
         const Tensor& D,
         Tensor& V,
         const std::shared_ptr<Molecule> mol,
+        bool use_nuclear = true,
+        double a = 1.0,
+        double b = 0.0,
+        double w = 0.0,
         double scale = 1.0);
     
-
 protected:
 
     std::shared_ptr<SBasisSet> basis1_;

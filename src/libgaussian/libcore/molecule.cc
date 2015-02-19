@@ -22,10 +22,10 @@ SMolecule::SMolecule(
     }
 }
 double SMolecule::nuclear_repulsion_energy(
+    bool use_nuclear,
     double a,
     double b,
-    double w,
-    bool use_nuclear) const 
+    double w) const
 {
     double E = 0.0;
     for (size_t A = 0; A < atoms_.size(); A++) {
@@ -41,11 +41,11 @@ double SMolecule::nuclear_repulsion_energy(
 }
 double SMolecule::nuclear_repulsion_energy(
     const std::shared_ptr<SMolecule>& other,
+    bool use_nuclear_this,
+    bool use_nuclear_other,
     double a,
     double b,
-    double w,
-    bool use_nuclear_this,
-    bool use_nuclear_other) const 
+    double w) const
 {
     const std::vector<SAtom>& atomsB = other->atoms(); 
 
