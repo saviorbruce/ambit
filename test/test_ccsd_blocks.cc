@@ -220,14 +220,18 @@ void ccsd()
         C.block("oh")("pq") = Cdocc("pq");
         BlockedTensor Gao = buildblock("AO basis G", {"hhhh"});
         Gao.block("hhhh")("pqrs") = g("pqrs");
-        BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"hhhg"});
-        Gtmp("wxys") = Gao("wxyz")*C("sz");
-        BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"hhgg"});
-        Gtmp2("wxrs") = Gtmp("wxys")*C("ry");
-        BlockedTensor Gtmp3 = buildblock("intermediate G_tmp3",{"hggg"});
-        Gtmp3("wqrs") = Gtmp2("wxrs")*C("qx");
+        BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"ghhh","hghh"});
+        Gtmp("pxyz") = C("pw")*Gao("wxyz");
+        Gtmp("xpyz") = Gtmp("pxyz");
+        BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"gghh","hhgg"});
+        Gtmp2("qpyz") = C("qx")*Gtmp("xpyz");
+        Gtmp2("yzqp") = Gtmp2("qpyz");
+        BlockedTensor Gtmp3 = buildblock("intermediate G_tmp3",{"ghgg","hggg"});
+        Gtmp3("rzpq") = C("ry")*Gtmp2("yzpq");
+        Gtmp3("zrpq") = Gtmp3("rzpq");
         
-        G("prqs") = Gtmp3("wqrs")*C("pw"); // <pr|qs> = (pq|rs)
+        G("sprq") = C("sz")*Gtmp3("zrpq"); // (sr|pq) = <sp|rq>
+//        G("prqs") = Gtmp3("pqrz")*C("sz"); // <pr|qs> = (pq|rs)
     }
 
     
