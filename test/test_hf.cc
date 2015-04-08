@@ -187,6 +187,7 @@ int main(int argc, char* argv[])
     ambit::initialize(argc, argv);
 
     if (argc > 1) {
+        printf("settings::distributed_capable: %d\n", settings::distributed_capable);
         if (settings::distributed_capable && strcmp(argv[1], "cyclops") == 0) {
             tensor_type = kDistributed;
             ambit::print("  *** Testing distributed tensors. ***\n");

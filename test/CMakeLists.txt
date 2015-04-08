@@ -43,6 +43,35 @@ add_executable(test_hf ${TEST_HF_SOURCES})
 add_dependencies(test_hf ambit)
 target_link_libraries(test_hf ambit ${Boost_LIBRARIES})
 
+set(TEST_MP2_SOURCES
+    test_mp2.cc
+)
+
+# build static libray
+add_executable(test_mp2 ${TEST_MP2_SOURCES})
+add_dependencies(test_mp2 ambit)
+target_link_libraries(test_mp2 ambit ${Boost_LIBRARIES})
+
+set(TEST_CCSD_SOURCES
+    test_ccsd.cc
+)
+
+# build static libray
+add_executable(test_ccsd ${TEST_CCSD_SOURCES})
+add_dependencies(test_ccsd ambit)
+target_link_libraries(test_ccsd ambit ${Boost_LIBRARIES})
+
+
+set(TEST_CCSD_BLOCKS_SOURCES
+    test_ccsd_blocks.cc
+)
+
+# build static libray
+add_executable(test_ccsd_blocks ${TEST_CCSD_BLOCKS_SOURCES})
+add_dependencies(test_ccsd_blocks ambit)
+target_link_libraries(test_ccsd_blocks ambit ${Boost_LIBRARIES})
+
+
 set(TEST_BLOCKS_SOURCES
     test_blocks.cc
 )
