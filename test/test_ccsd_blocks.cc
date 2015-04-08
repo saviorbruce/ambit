@@ -418,8 +418,8 @@ void ccsd()
         t2n("ijab") += (T2("jmbe")-T2("mjbe"))*inter_w("maei");
         t2n("ijab") -= T1("je")*T1("mb")*G("miea");
         t2n("ijab") += T2("jmbe")*(inter_w("maei")+inter_w2("maei"));
-        t2n("ijab") += T1("ie")*G("jeba");
-        t2n("ijab") += T1("je")*G("ieab");
+        t2n("ijab") += T1("ie")*G("ejab");  // This is much faster than G("jeba")
+        t2n("ijab") += T1("je")*G("abie");  // much faster than G("ieab")
         t2n("ijab") -= T1("ma")*G("ijmb");
         t2n("ijab") -= T1("mb")*G("jima");
 //        BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
