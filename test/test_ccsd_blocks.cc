@@ -329,7 +329,9 @@ void ccsd()
     BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
     BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
     BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
-
+    BlockedTensor G_k = buildblock("Gmaef",{"ovvv"});
+    G_k("maef") = G("amef");
+    BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
 
     
     do {
@@ -366,7 +368,13 @@ void ccsd()
         inter_w("mnij") += 0.5*Tau("ijef")*G("mnef");
 
         inter_w("abef") = G("abef");
-        inter_w("abef") -= T1("mb")*G("amef");
+//        inter_w("abef") -= T1("mb")*G("amef");    // This takes 6s total
+//        inter_w("abef") -= T1("mb")*G_k("maef");  // This still takes 6s
+//        BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
+        w_tmp.zero();
+        w_tmp("baef") -= T1("mb")*G_k("maef"); // This take 0.7s total
+        inter_w("abef") += w_tmp("baef");  // This take 0.9s total
+
         inter_w("abef") -= T1("ma")*G("mbef");
         inter_w("abef") += 0.5*Tau("mnab")*G("mnef");
 
