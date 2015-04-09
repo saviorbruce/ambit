@@ -223,36 +223,16 @@ void ccsd()
         BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"ghhh","hghh"});
         Gtmp("pxyz") = C("pw")*Gao("wxyz");
         Gtmp("xpyz") = Gtmp("pxyz");
-        BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"gghh","hhgg"});
+        BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"gghh"});
         Gtmp2("qpyz") = C("qx")*Gtmp("xpyz");
-        Gtmp2("yzqp") = Gtmp2("qpyz");
-        BlockedTensor Gtmp3 = buildblock("intermediate G_tmp3",{"ghgg","hggg"});
-        Gtmp3("rzpq") = C("ry")*Gtmp2("yzpq");
-        Gtmp3("zrpq") = Gtmp3("rzpq");
-        
-        G("sprq") = C("sz")*Gtmp3("zrpq"); // (sr|pq) = <sp|rq>
-//        G("prqs") = Gtmp3("pqrz")*C("sz"); // <pr|qs> = (pq|rs)
+        BlockedTensor Gtmp3 = buildblock("intermediate G_tmp3",{"gghg","gggh"});
+        Gtmp3("qpyr") = C("rz")*Gtmp2("qpyz");
+        Gtmp3("qpry") = Gtmp3("qpyr");
+        BlockedTensor G_c = buildblock("G_c",{"gggg"});
+        G_c("qprs") = C("sy")*Gtmp3("qpry");
+        G("pqrs") = G_c("prqs");  // <pq|rs> = (pr|qs)
     }
 
-    
-        
-    // AO to MO transformation, block by block
-    /* <ia|bc>, <ij|ab>, <ij|ka>, <ab|cd>, <ia|jb>, <ij|kl> */
-    //This takes about the same time as full AO->MO transformation
-//    BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"hhhg"});
-//    Gtmp("wxys") = Gao("wxyz")*C("sz");
-//    BlockedTensor Gtmp2 = buildblock("intermediate G_tmp",{"hhog","hhvv"});
-//    Gtmp2("wxis") = Gtmp("wxys")*C("iy");
-//    Gtmp2("wxab") = Gtmp("wxyb")*C("ay");
-//    BlockedTensor Gtmp3 = buildblock("intermediate G_tmp",{"hoog","hovv","hvgv"});
-//    Gtmp3("wijs") = Gtmp2("wxjs")*C("ix");
-//    Gtmp3("wiab") = Gtmp2("wxab")*C("ix");
-//    Gtmp3("wapb") = Gtmp2("wxpb")*C("ax");
-//    BlockedTensor G = buildblock("G",{"oooo","ooov","oovv","ovov","ovvv","vvvv"});
-//    G("pbcd") = Gtmp3("wbcd")*C("pw");
-    
-    
-    
     ambit::timer::timer_pop();
 
 
@@ -305,12 +285,14 @@ void ccsd()
     T2("ijab") = G("ijab")*Dijab("ijab");
 
     // Test the MP2 energy
+    {
     BlockedTensor T2_2 = buildblock("T2_2",{"oovv"});
     T2_2("ijab") = 2.0*T2("ijab")-T2("jiab");
     double e_mp2 = T2_2("ijab")*G("ijab");
-//    double e_mp2 = (2*T2("ijab")-T2("jiab"))*G("ijab");
+//    double e_mp2 = G("ijab")*(2*T2("ijab")-T2("jiab"));
     print("  MP2 Correlation Energy: %20.14lf\n", e_mp2);
     print("  Total MP2 Energy:       %20.14lf\n\n", e_scf+e_mp2);
+    }
 
 //     Start CC iteration
     double e_ccsd = 0.0;
