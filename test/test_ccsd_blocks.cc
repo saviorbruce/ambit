@@ -108,6 +108,9 @@ void ccsd()
 //    C.print(stdout, true);
 
     size_t ndocc = (size_t)n_docc;
+    size_t nall = (size_t)nso;
+    size_t nvocc = nall - ndocc;
+
     Tensor Cdocc = build("C", {ndocc, (size_t)nso});
     IndexRange CtoCdocc = { {0,ndocc}, {0,(size_t)nso}};
     //Cdocc.slice(C, CtoCdocc, CtoCdocc);
@@ -123,6 +126,11 @@ void ccsd()
     bool converged = false;
     double Eelec = 0.0, Eold = 0.0;
     int iter = 1, maxiter = 100;
+    // For DIIS use
+//    size_t diis_max = 4;
+//    std::vector<Tensor> diis_F;
+//    std::vector<Tensor> diis_E;
+//    Tensor diis_C = build("diis_C",{diis_max});
     do {
         ambit::timer::timer_push("HF iteration");
 
@@ -154,7 +162,7 @@ void ccsd()
         delta_D("mu,nu") = D_new("mu,nu") - D("mu,nu");
         double D_change = delta_D("mu,nu") * delta_D("mu,nu");
 
-        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter++, Enuc + Eelec,Eelec-Eold,std::sqrt(D_change));
+        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter, Enuc + Eelec,Eelec-Eold,std::sqrt(D_change));
 
         if (std::fabs(Eelec - Eold) < 1.0e-13 && std::sqrt(D_change) < 1.0e-10) {
             converged = true;
@@ -165,9 +173,43 @@ void ccsd()
             D = D_new;
         }
 
+//        // DIIS Extrapolation
+//        // Error Matrix err_M = FDS- SDF for current iteration
+//        Tensor err_M = build("error matrix",{nall,nall});
+//        Tensor tmp = build("diis tmp matrix",{nall,nall});
+//        tmp("r,s") = D("r,p")*S("p,s");
+//        err_M("p,s") = F("p,r")*tmp("r,s");
+//        tmp("r,s") = D("r,p")*F("p,s");
+//        err_M("p,s") -= S("p,r")*tmp("r,s");
+
+//        if(iter <= diis_max) {
+//            diis_F.push_back(F);
+//            diis_E.push_back(err_M);
+//        }
+//        else {
+//            Tensor diis_B = build("B matrix",{diis_max+1,diis_max+1});
+//            diis_B.iterate([&](const std::vector<size_t>& indices, double& value) {
+//                if (indices[0]<diis_max && indices[1]<diis_max)
+//                    value = diis_E[indices[0]]("i,j")*diis_E[indices[1]]("i,j")*;
+//                else value = -1.0;
+//                if (indices[0]==diis_max && indices[1]==diis_max) value = 0.0;
+//            });
+//            // need a lapack solver function.
+
+
+
+
+//            int diis_i = iter%diis_max - 1;
+
+
+
+//            print("stored %d F,  %d  \n", diis_F.size(),iter%diis_max);
+//        }
+
+
         ambit::timer::timer_pop();
 
-        if (iter > maxiter) {
+        if (iter++ > maxiter) {
             print("  HF has not converged in %d iterations!\n", maxiter);
             break;
         }
@@ -176,8 +218,7 @@ void ccsd()
 //    MP2
 
     double e_scf = Enuc + Eelec;
-    size_t nall = (size_t)nso;
-    size_t nvocc = nall - ndocc;
+
 
     //prepare Cv matrix to use together with Co (Cdocc)
 
