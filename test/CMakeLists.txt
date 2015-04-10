@@ -71,6 +71,11 @@ add_executable(test_ccsd_blocks ${TEST_CCSD_BLOCKS_SOURCES})
 add_dependencies(test_ccsd_blocks ambit)
 target_link_libraries(test_ccsd_blocks ambit ${Boost_LIBRARIES})
 
+# build static libray
+add_executable(test_ccd_blocks test_ccd_blocks.cc)
+add_dependencies(test_ccd_blocks ambit)
+target_link_libraries(test_ccd_blocks ambit ${Boost_LIBRARIES})
+
 
 set(TEST_BLOCKS_SOURCES
     test_blocks.cc

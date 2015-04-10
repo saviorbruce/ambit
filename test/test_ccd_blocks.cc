@@ -56,7 +56,7 @@ Tensor load_2e(const Dimension& AO)
     return g;
 }
 
-void ccsd()
+void ccd()
 {
     int nirrep, nso , n_docc;
     double Enuc = 0.0, Eref = 0.0;
@@ -126,11 +126,7 @@ void ccsd()
     bool converged = false;
     double Eelec = 0.0, Eold = 0.0;
     int iter = 1, maxiter = 100;
-    // For DIIS use
-//    size_t diis_max = 4;
-//    std::vector<Tensor> diis_F;
-//    std::vector<Tensor> diis_E;
-//    Tensor diis_C = build("diis_C",{diis_max});
+
     do {
         ambit::timer::timer_push("HF iteration");
 
@@ -173,38 +169,7 @@ void ccsd()
             D = D_new;
         }
 
-//        // DIIS Extrapolation
-//        // Error Matrix err_M = FDS- SDF for current iteration
-//        Tensor err_M = build("error matrix",{nall,nall});
-//        Tensor tmp = build("diis tmp matrix",{nall,nall});
-//        tmp("r,s") = D("r,p")*S("p,s");
-//        err_M("p,s") = F("p,r")*tmp("r,s");
-//        tmp("r,s") = D("r,p")*F("p,s");
-//        err_M("p,s") -= S("p,r")*tmp("r,s");
 
-//        if(iter <= diis_max) {
-//            diis_F.push_back(F);
-//            diis_E.push_back(err_M);
-//        }
-//        else {
-//            Tensor diis_B = build("B matrix",{diis_max+1,diis_max+1});
-//            diis_B.iterate([&](const std::vector<size_t>& indices, double& value) {
-//                if (indices[0]<diis_max && indices[1]<diis_max)
-//                    value = diis_E[indices[0]]("i,j")*diis_E[indices[1]]("i,j")*;
-//                else value = -1.0;
-//                if (indices[0]==diis_max && indices[1]==diis_max) value = 0.0;
-//            });
-//            // need a lapack solver function.
-
-
-
-
-//            int diis_i = iter%diis_max - 1;
-
-
-
-//            print("stored %d F,  %d  \n", diis_F.size(),iter%diis_max);
-//        }
 
 
         ambit::timer::timer_pop();
@@ -225,14 +190,14 @@ void ccsd()
     Tensor Cvocc = build("Cv", {nvocc, nall});
     Cvocc({{0,nvocc},{0,nall}}) = C_all({{ndocc,nall},{0,nall}});
 
-    Tensor Coo = Tensor::build(kCore,"Coo",{ndocc,ndocc});
-    Coo({{0,ndocc},{0,ndocc}}) = C_all({{0,ndocc},{0,ndocc}});
-    Tensor Cov = Tensor::build(kCore,"Cov",{ndocc,nvocc});
-    Cov({{0,ndocc},{0,nvocc}}) = C_all({{0,ndocc},{ndocc,nall}});
-    Tensor Cvo = Tensor::build(kCore,"Cvo",{nvocc,ndocc});
-    Cvo({{0,nvocc},{0,ndocc}}) = C_all({{ndocc,nall},{0,ndocc}});
-    Tensor Cvv = Tensor::build(kCore,"Cvv",{nvocc,nvocc});
-    Cvv({{0,nvocc},{0,nvocc}}) = C_all({{ndocc,nall},{ndocc,nall}});
+//    Tensor Coo = Tensor::build(kCore,"Coo",{ndocc,ndocc});
+//    Coo({{0,ndocc},{0,ndocc}}) = C_all({{0,ndocc},{0,ndocc}});
+//    Tensor Cov = Tensor::build(kCore,"Cov",{ndocc,nvocc});
+//    Cov({{0,ndocc},{0,nvocc}}) = C_all({{0,ndocc},{ndocc,nall}});
+//    Tensor Cvo = Tensor::build(kCore,"Cvo",{nvocc,ndocc});
+//    Cvo({{0,nvocc},{0,ndocc}}) = C_all({{ndocc,nall},{0,ndocc}});
+//    Tensor Cvv = Tensor::build(kCore,"Cvv",{nvocc,nvocc});
+//    Cvv({{0,nvocc},{0,nvocc}}) = C_all({{ndocc,nall},{ndocc,nall}});
 
 
 
@@ -290,11 +255,13 @@ void ccsd()
 
     ambit::timer::timer_push("Constructing denominators");
 
-    Tensor Dia_o = build("Dia",{ndocc,nvocc});
-    Dia_o.iterate([&](const std::vector<size_t>& indices, double& value) {
-//        value = 1.0/(e_eigev[indices[0]]-e_eigev[indices[1]+ndocc]);
-        value = 1.0/(t_eigev.data()[indices[0]]-t_eigev.data()[indices[1]+ndocc]);
-    });
+//    Tensor Dia_o = build("Dia",{ndocc,nvocc});
+//    Dia_o.iterate([&](const std::vector<size_t>& indices, double& value) {
+////        value = 1.0/(e_eigev[indices[0]]-e_eigev[indices[1]+ndocc]);
+//        value = 1.0/(t_eigev.data()[indices[0]]-t_eigev.data()[indices[1]+ndocc]);
+//    });
+//    BlockedTensor Dia = buildblock("Dia",{"ov"});
+//    Dia.block("ov")("pq") = Dia_o("pq");
 
     Tensor Dijab_o = build("Dijab",{ndocc,ndocc,nvocc,nvocc});
     Dijab_o.iterate([&](const std::vector<size_t>& indices, double& value) {
@@ -302,14 +269,12 @@ void ccsd()
                 -t_eigev.data()[indices[2]+ndocc]-t_eigev.data()[indices[3]+ndocc]);
     });
     
-    BlockedTensor Dia = buildblock("Dia",{"ov"});
-    Dia.block("ov")("pq") = Dia_o("pq");
     BlockedTensor Dijab = buildblock("Dijab",{"oovv"});
     Dijab.block("oovv")("pqrs") = Dijab_o("pqrs");
 
     ambit::timer::timer_pop();
 
-    /* Close-shell CCSD */
+    /* Close-shell CCD */
 
 
 
@@ -321,7 +286,7 @@ void ccsd()
     // Build the Initial-Guess Cluster Amplitudes
     //spin-adapted version: we only need the TIA and TIjAb amplitudes
     //the initial TIJAB = TIjAb-TJiAb;
-    BlockedTensor T1 = buildblock("T1",{"ov"});
+//    BlockedTensor T1 = buildblock("T1",{"ov"});
     BlockedTensor T2 = buildblock("T2",{"oovv"});
     T2("ijab") = G("ijab")*Dijab("ijab");
 
@@ -339,162 +304,140 @@ void ccsd()
     double e_ccsd = 0.0;
     converged = false;
     iter = 1, maxiter = 50;
-    
-    // Define all the tensors outside the loop
-    BlockedTensor Tau_t = buildblock("Tau tilde",{"oovv"});
-    BlockedTensor Tau = buildblock("Tau",{"oovv"});
-    BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv"});
+//
+//    // Define all the tensors outside the loop
+//    BlockedTensor Tau_t = buildblock("Tau tilde",{"oovv"});
+//    BlockedTensor Tau = buildblock("Tau",{"oovv"});
+//    BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv"});
     BlockedTensor inter_f = buildblock("intermediate F",{"vv","oo","ov"});
     BlockedTensor inter_w = buildblock("intermediate W",{"oooo","vvvv","ovvo"});
     BlockedTensor inter_w2 = buildblock("intermediate WMbeJ",{"ovvo"});
-    BlockedTensor t1n = buildblock("T1 new",{"ov"});
-    BlockedTensor T1n = buildblock("copy of T1 new",{"ov"});
+//    BlockedTensor t1n = buildblock("T1 new",{"ov"});
+//    BlockedTensor T1n = buildblock("copy of T1 new",{"ov"});
     BlockedTensor t2n = buildblock("T2 new",{"oovv"});
-//    BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
-    BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
-    BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
-    BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
-    BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
+////    BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
+//    BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
+//    BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
+//    BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
+//    BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
     BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
-    BlockedTensor G_k = buildblock("Gmaef",{"ovvv"});
-    G_k("maef") = G("amef");
-    BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
+    BlockedTensor G_k = buildblock("G_k",{/*"ovvv",*/"ovvo"});
+//    G_k("maef") = G("amef");
+    G_k("nfem") = G("mnef");
+    BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv","ovvo","ovov"});
+    BlockedTensor t_tmp = buildblock("Ttmp",{"oovv","ovov"});
+    BlockedTensor t2n_tmp = buildblock("T2_tmp",{/*"oovv",*/"ovov"});
+//
+//
+    BlockedTensor G2_g = buildblock("2Gpqrs-Gqprs",{"oovv"});
+    G2_g("ijab") = 2.0*G("ijab")-G("jiab");
+    BlockedTensor G2_g_k = buildblock("G2_g_k",{"ovvo"});
+    G2_g_k("nfem") = G2_g("mnef");
 
-    
+    // identity tensor
+//    BlockedTensor Identity = buildblock("Identity",{"vv"});
+//    Identity.block("vv").iterate([&](const std::vector<size_t>& indices, double& value) {
+//        value = 1.0;
+//    });
+
     do {
 
-        ambit::timer::timer_push("CCSD iteration");
-
-        //Tau_tilde, Tau, and Tau_tt
-//        BlockedTensor Tau_t = buildblock("Tau tilde",{"oovv"});
-        Tau_t("ijab") = T2("ijab");
-        Tau_t("ijab") += 0.5*T1("ia")*T1("jb");
-//        BlockedTensor Tau = buildblock("Tau",{"oovv"});
-        Tau("ijab") = T2("ijab");
-        Tau("ijab") += T1("ia")*T1("jb");
-//        BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv"});
-        Tau_tt("ijab") = T2("ijab");
-        Tau_tt("ijab") += 2.0*T1("ia")*T1("jb");
-
-
+        ambit::timer::timer_push("CCD iteration");
 
         //Form the intermediates
         // intermediate F matrix
 //        BlockedTensor inter_f = buildblock("intermediate F",{"vv","oo","ov"});
-        inter_f("ae") = T1("mf")*(2*G("amef")-G("maef"));       // This is faster than 2*G("mafe")-G("maef")
-        inter_f("ae") -= Tau_t("mnaf")*(2*G("mnef")-G("nmef"));
-        inter_f("mi") = T1("ne")*(2*G("mnie")-G("nmie"));
-        inter_f("mi") += Tau_t("inef")*(2*G("mnef")-G("nmef"));
-        inter_f("me") = T1("nf")*(2*G("mnef")-G("nmef"));
+//        inter_f("ae") = -T2("nmfa")* G2_g("nmfe");
+        inter_f("ae") = -T2("mnaf")* G2_g("mnef");
+        inter_f("mi") = T2("inef")*G2_g("mnef");
+
 
 //        BlockedTensor inter_w = buildblock("intermediate W",{"oooo","vvvv","ovvo"});
-
         inter_w("mnij") = G("mnij");
-        inter_w("mnij") += T1("je")*G("mnie");
-        inter_w("mnij") += T1("ie")*G("nmje");
-        inter_w("mnij") += 0.5*Tau("ijef")*G("mnef");
+        inter_w("mnij") += 0.5*T2("ijef")*G("mnef");
 
         inter_w("abef") = G("abef");
-//        inter_w("abef") -= T1("mb")*G("amef");    // This takes 6s total
-//        inter_w("abef") -= T1("mb")*G_k("maef");  // This still takes 6s
-//        BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
-        w_tmp.zero();
-        w_tmp("baef") -= T1("mb")*G_k("maef"); // This take 0.7s total
-        inter_w("abef") += w_tmp("baef");  // This take 0.9s total
-
-        inter_w("abef") -= T1("ma")*G("mbef");
-        inter_w("abef") += 0.5*Tau("mnab")*G("mnef");
-
+        inter_w("abef") += 0.5*T2("mnab")*G("mnef");
+//
         inter_w("mbej") = G("mbej");
-        inter_w("mbej") += T1("jf")*G("mbef");
-        inter_w("mbej") -= T1("nb")*G("nmje");
-        inter_w("mbej") -= 0.5*Tau_tt("njbf")*G("mnef");
-        inter_w("mbej") += 0.5*T2("jnbf")*(2*G("mnef")-G("nmef"));
-        
-        //inter_w abba case        
+//        inter_w("mbej") -= 0.5*T2("njbf")*G("mnef");
+        t_tmp("nfjb") = T2("njfb"); // A temporary T2 for faster contraction
+        w_tmp("jbem") = 0.5*t_tmp("nfjb")*G2_g_k("nfem"); // tmp w
+        inter_w("mbej") += w_tmp("jbem");
+        t_tmp("nfjb") = T2("jnfb"); // reuse T_tmp
+        w_tmp("jbem") = -0.5*t_tmp("nfjb")*G_k("nfem");  // reuse tmp w
+        inter_w("mbej") += w_tmp("jbem");
+
+//        inter_w("mbej") += 0.5*T2("jnbf")*(2*G("mnef")-G("nmef"));
+
+        //inter_w abba case
 //        BlockedTensor inter_w2 = buildblock("intermediate WMbeJ",{"ovvo"});
         inter_w2("mbej") = -G("mbje");
-        inter_w2("mbej") -= T1("jf")*G("bmef"); // This is much faster than G("mbfe")!
-        inter_w2("mbej") += T1("nb")*G("mnje");
-        inter_w2("mbej") += 0.5*Tau_tt("jnfb")*G("nmef");
+        w_tmp("jbem") = 0.5*t_tmp("nfjb")*G("nfem");  // reuse w_tmp and tmp T2
+        inter_w2("mbej") += w_tmp("jbem");
+//
+        //Compute new T2 amplitudes
 
-        //Compute new T1 and T2 amplitudes
-        //new T1
-//        BlockedTensor t1n = buildblock("T1 new",{"ov"});
-        t1n("ia") = T1("ie")*inter_f("ae");
-        t1n("ia") -= T1("ma")*inter_f("mi");
-        t1n("ia") += inter_f("me")*(2*T2("imae")-T2("miae"));
-        t1n("ia") += T1("me")*(2*G("imae")-G("maie"));
-        t1n("ia") -= T2("mnae")*(2*G("mnie")-G("nmie"));
-        t1n("ia") += T2("imef")*(2*G("amef")-G("maef")); // G("amef") is much faster than G("mafe")
-//        BlockedTensor T1n = buildblock("copy of T1 new",{"ov"});
-        T1n("ia") =  t1n("ia");
-        t1n("ia") =  T1n("ia")*Dia("ia");
-
-        //new T2
 //        BlockedTensor t2n = buildblock("T2 new",{"oovv"});
-        BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
         t2n("ijab") = G("ijab");
-        sum_tmp("be") -= 0.5*T1("mb")*inter_f("me");
-        t2n("ijab") += T2("ijae")*(inter_f("be")+sum_tmp("be"));
-        t2n("ijab") += T2("ijeb")*(inter_f("ae")+sum_tmp("ae"));
-        sum_tmp("mj") += 0.5*T1("je")*inter_f("me");
-        t2n("ijab") -= T2("imab")*(inter_f("mj")+sum_tmp("mj"));
-        t2n("ijab") -= T2("mjab")*(inter_f("mi")+sum_tmp("mi"));
-        t2n("ijab") += Tau("mnab")*inter_w("mnij");
-        t2n("ijab") += Tau("ijef")*inter_w("abef");
-        t2n("ijab") += (T2("imae")-T2("miae"))*inter_w("mbej");
-        t2n("ijab") -= T1("ie")*T1("ma")*G("mjeb");
-        t2n("ijab") += T2("imae")*(inter_w("mbej")+inter_w2("mbej"));
-        t2n("ijab") += T2("mibe")*inter_w2("maej");
-        t2n("ijab") -= T1("ie")*T1("mb")*G("maje");
-        t2n("ijab") += T2("mjae")*inter_w2("mbei");
-        t2n("ijab") -= T1("je")*T1("ma")*G("mbie");
-        t2n("ijab") += (T2("jmbe")-T2("mjbe"))*inter_w("maei");
-        t2n("ijab") -= T1("je")*T1("mb")*G("miea");
-        t2n("ijab") += T2("jmbe")*(inter_w("maei")+inter_w2("maei"));
-        t2n("ijab") += T1("ie")*G("ejab");  // This is much faster than G("jeba")
-        t2n("ijab") += T1("je")*G("abie");  // much faster than G("ieab")
-        t2n("ijab") -= T1("ma")*G("ijmb");
-        t2n("ijab") -= T1("mb")*G("jima");
-//        BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
-        T2n("ijab") = t2n("ijab");
-        t2n("ijab") = T2n("ijab") * Dijab("ijab");
-//        t2n.print(stdout,true);
+        t2n("ijab") += T2("ijae")*inter_f("be");
+        t_tmp("jiba") = T2("jibe")*inter_f("ae");
+        t_tmp("jiba") -= T2("miba")*inter_f("mj");
+        t2n("ijab") += t_tmp("jiba");
+        t2n("ijab") -= T2("mjab")*inter_f("mi");
+        t2n("ijab") += T2("mnab")*inter_w("mnij");
 
-        //compute new CCSD energy
-//        BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
-        Tau_new("ijab") = t2n("ijab");
-        Tau_new("ijab") += t1n("ia")*t1n("jb");
-//        BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
-        Tau_new2_2("ijab") = 2*Tau_new("ijab")-Tau_new("jiab");
-        double Eccn =  G("ijab")*Tau_new2_2("ijab");
-        //compute RMS in T1 and T2 amplitudes
-//        BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
-        delta_t1("ia") = t1n("ia")-T1("ia");
-        double T1_change = delta_t1("ia")*delta_t1("ia");
+        t2n("ijab") += T2("ijef")*inter_w("abef");
+//        t2n("ijab") += (T2("imae")-T2("miae"))*inter_w("mbej");
+        t_tmp("iame") = 2.0*T2("imae")-T2("miae");
+        w_tmp("mejb") = inter_w("mbej");
+        t2n_tmp("iajb") = t_tmp("iame") * w_tmp("mejb");
+//        t2n("ijab") += t2n_tmp("iajb");
+//        t2n("ijab") += t2n_tmp("jbia");
+
+        t_tmp("iame") = T2("imae");
+        w_tmp("mejb") = inter_w2("mbej");
+        t2n_tmp("iajb") += t_tmp("iame") * w_tmp("mejb");
+        t2n("ijab") += t2n_tmp("iajb");
+        t2n("ijab") += t2n_tmp("jbia");
+
+        t_tmp("ibme") = T2("mibe");
+        w_tmp("meja") = inter_w2("maej");
+        t2n_tmp("ibja") = t_tmp("ibme") * w_tmp("meja");
+        t2n("ijab") += t2n_tmp("ibja");
+        t2n("ijab") += t2n_tmp("jaib");
+
+        t_tmp("ijab") = t2n("ijab");
+        t2n("ijab") = t_tmp("ijab")*Dijab("ijab");
+
+
+
+
+        //compute new CCD energy
+
+        double Eccn =  t2n("ijab")*G2_g("ijab");
+        //compute RMS in T2 amplitudes
 //        BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
         delta_t2("ijab") = t2n("ijab")-T2("ijab");
         double T2_change = delta_t2("ijab")*delta_t2("ijab");
 
         if (settings::rank == 0)
-            printf("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
-                   iter++, Eccn, Eccn - e_ccsd, std::sqrt(T1_change), std::sqrt(T2_change));
+            printf("  @CCD iteration %2d :  E(CCD) =%16.10f  dE = %12.5e   RMS(T2) = %12.5e\n",
+                   iter, Eccn, Eccn - e_ccsd, std::sqrt(T2_change));
 
         // If converged, print final results
-        if (std::fabs(Eccn - e_ccsd) < 1.0e-10 & std::sqrt(T1_change) < 1.0e-10 & std::sqrt(T2_change) < 1.0e-10) {
+        if (std::fabs(Eccn - e_ccsd) < 1.0e-10  & std::sqrt(T2_change) < 1.0e-10) {
             converged = true;
-            print("  CCSD has converged!\n  CCSD correlation energy:      %20.14lf\n", Eccn );
+            print("  CCD has converged!\n  CCD correlation energy:      %20.14lf\n", Eccn );
         }
         // If not converged, update Energy and Amplitudes
         e_ccsd = Eccn;
-        T1("ia") = t1n("ia");
         T2("ijab") = t2n("ijab");
-
+//
         ambit::timer::timer_pop();
 
-        if (iter > maxiter) {
-            printf("  CCSD has not converged in %d iterations!\n", maxiter);
+        if (++iter > maxiter) {
+            printf("  CCD has not converged in %d iterations!\n", maxiter);
             break;
         }
     } while (!converged);
@@ -517,7 +460,7 @@ int main(int argc, char* argv[])
             print("  *** Testing core tensors.   ***\n");
         }
     }
-    ccsd();
+    ccd();
 
     ambit::finalize();
     return EXIT_SUCCESS;
