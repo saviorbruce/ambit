@@ -225,17 +225,6 @@ void ccsd()
     Tensor Cvocc = build("Cv", {nvocc, nall});
     Cvocc({{0,nvocc},{0,nall}}) = C_all({{ndocc,nall},{0,nall}});
 
-    Tensor Coo = Tensor::build(kCore,"Coo",{ndocc,ndocc});
-    Coo({{0,ndocc},{0,ndocc}}) = C_all({{0,ndocc},{0,ndocc}});
-    Tensor Cov = Tensor::build(kCore,"Cov",{ndocc,nvocc});
-    Cov({{0,ndocc},{0,nvocc}}) = C_all({{0,ndocc},{ndocc,nall}});
-    Tensor Cvo = Tensor::build(kCore,"Cvo",{nvocc,ndocc});
-    Cvo({{0,nvocc},{0,ndocc}}) = C_all({{ndocc,nall},{0,ndocc}});
-    Tensor Cvv = Tensor::build(kCore,"Cvv",{nvocc,nvocc});
-    Cvv({{0,nvocc},{0,nvocc}}) = C_all({{ndocc,nall},{ndocc,nall}});
-
-
-
     // Blocked TEI Tensors
     std::vector<size_t> nso_list;
     std::vector<size_t> ndo_list;
@@ -326,14 +315,14 @@ void ccsd()
     T2("ijab") = G("ijab")*Dijab("ijab");
 
     // Test the MP2 energy
-    {
+
     BlockedTensor T2_2 = buildblock("T2_2",{"oovv"});
     T2_2("ijab") = 2.0*T2("ijab")-T2("jiab");
     double e_mp2 = T2_2("ijab")*G("ijab");
 //    double e_mp2 = G("ijab")*(2*T2("ijab")-T2("jiab"));
     print("  MP2 Correlation Energy: %20.14lf\n", e_mp2);
     print("  Total MP2 Energy:       %20.14lf\n\n", e_scf+e_mp2);
-    }
+
 
 //     Start CC iteration
     double e_ccsd = 0.0;
@@ -343,22 +332,59 @@ void ccsd()
     // Define all the tensors outside the loop
     BlockedTensor Tau_t = buildblock("Tau tilde",{"oovv"});
     BlockedTensor Tau = buildblock("Tau",{"oovv"});
-    BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv"});
+    BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv","ovov"});
     BlockedTensor inter_f = buildblock("intermediate F",{"vv","oo","ov"});
-    BlockedTensor inter_w = buildblock("intermediate W",{"oooo","vvvv","ovvo"});
-    BlockedTensor inter_w2 = buildblock("intermediate WMbeJ",{"ovvo"});
+    BlockedTensor inter_w = buildblock("intermediate W",{"oooo","vvvv","ovvo","vovo"});
+//    BlockedTensor inter_w2 = buildblock("intermediate WMbeJ",{"ovvo"});
     BlockedTensor t1n = buildblock("T1 new",{"ov"});
     BlockedTensor T1n = buildblock("copy of T1 new",{"ov"});
+    BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
     BlockedTensor t2n = buildblock("T2 new",{"oovv"});
-//    BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
-    BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
+//    BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
     BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
     BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
     BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
     BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
-    BlockedTensor G_k = buildblock("Gmaef",{"ovvv"});
+
+    BlockedTensor G_k = buildblock("G_k",{"ovvv","ovvo","ooov","oovo","vovv","vovo","oovv"});
     G_k("maef") = G("amef");
-    BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
+    G_k("nfem") = G("mnef");
+    G_k("mnje") = G("nmje");
+    G_k("mnej") = G("nmej");
+    G_k("eiab") = G("ieab");
+    G_k("ejam") = G("ejma");
+    G_k("ijba") = G("ijab");
+    BlockedTensor w_tmp = buildblock("Wtmp",{"oooo","vvvv","ovvo","ovov","vovo"});
+    BlockedTensor T2_k = buildblock("T2_k",{"ovov","oovv"});
+    BlockedTensor Tau_tt_k = buildblock("Tau_tt_k",{"ovov"});
+    BlockedTensor t_tmp = buildblock("t_tmp",{"oovv","ovov","vvvo","vvov","vovv","voov"});
+    BlockedTensor t2_tmp = buildblock("t2_tmp",{"ovov","vvvo","vvov","vovv"});
+    BlockedTensor T2_2_k = buildblock("T2_2_k",{"ovov"});
+
+//    BlockedTensor G2_g = buildblock("2Gpqrs-Gqprs",{"oovv","vovv"});
+////    G2_g("ijab") = 2.0*G("ijab")-G("jiab");
+//    G2_g("mnef") = 2.0*G("mnef")-G("nmef");
+//    G2_g("ciab") = 2.0*G("ciab")-G("icab"); // There is a bug here?
+    BlockedTensor G2_g = buildblock("2Gpqrs-Gqprs",{"gggg"});
+    G2_g("pqrs") = 2.0*G("pqrs") - G("qprs");
+//    G2_g("aibc") = 2.0*G("aibc") - G("iabc"); //changed value -- bug?
+//    G2_g("ciab") = 2.0*G("ciab")-G("icab"); // There is a bug here?
+    BlockedTensor G2_g_k = buildblock("G2_g_k",{"ovvo","ovov","vvov","ooov"});
+    G2_g_k("nfem") = G2_g("mnef");
+    G2_g_k("nfme") = G2_g("mnef");
+    G2_g_k("aemf") = G2_g("amef");
+    G2_g_k("mine") = G2_g("mnie");
+    BlockedTensor G2_g_k2 = buildblock("G2_g_k2",{"ovov"});
+    G2_g_k2("iame") = G2_g("amie");
+
+    // initial Tau --- updated at the end of each iteration
+    t_tmp("iajb") = T1("ia")*T1("jb");
+    Tau("ijab") = T2("ijab");
+    Tau("ijab") += t_tmp("iajb");
+    Tau_t("ijab") = T2("ijab");
+    Tau_t("ijab") += 0.5*t_tmp("iajb");
+    Tau_tt("ijab") = T2("ijab");
+    Tau_tt("ijab") += 2.0*t_tmp("iajb");
 
     
     do {
@@ -367,107 +393,190 @@ void ccsd()
 
         //Tau_tilde, Tau, and Tau_tt
 //        BlockedTensor Tau_t = buildblock("Tau tilde",{"oovv"});
-        Tau_t("ijab") = T2("ijab");
-        Tau_t("ijab") += 0.5*T1("ia")*T1("jb");
+//        Tau_t("ijab") = T2("ijab");
+//        Tau_t("ijab") += 0.5*T1("ia")*T1("jb");
 //        BlockedTensor Tau = buildblock("Tau",{"oovv"});
-        Tau("ijab") = T2("ijab");
-        Tau("ijab") += T1("ia")*T1("jb");
+//        Tau("ijab") = T2("ijab");
+//        Tau("ijab") += T1("ia")*T1("jb");
 //        BlockedTensor Tau_tt = buildblock("Tau_tt",{"oovv"});
-        Tau_tt("ijab") = T2("ijab");
-        Tau_tt("ijab") += 2.0*T1("ia")*T1("jb");
+//        Tau_tt("ijab") = T2("ijab");
+//        Tau_tt("ijab") += 2.0*T1("ia")*T1("jb");
 
 
 
         //Form the intermediates
         // intermediate F matrix
 //        BlockedTensor inter_f = buildblock("intermediate F",{"vv","oo","ov"});
-        inter_f("ae") = T1("mf")*(2*G("amef")-G("maef"));       // This is faster than 2*G("mafe")-G("maef")
-        inter_f("ae") -= Tau_t("mnaf")*(2*G("mnef")-G("nmef"));
-        inter_f("mi") = T1("ne")*(2*G("mnie")-G("nmie"));
-        inter_f("mi") += Tau_t("inef")*(2*G("mnef")-G("nmef"));
-        inter_f("me") = T1("nf")*(2*G("mnef")-G("nmef"));
+//        inter_f("ae") = T1("mf")*(2*G("amef")-G("maef"));
+        inter_f("ae") = T1("mf")*G2_g_k("aemf");
+//        inter_f("ae") -= Tau_t("mnaf")*(2*G("mnef")-G("nmef"));
+        inter_f("ae") -= Tau_t("nmfa")*G2_g("nmfe");
+
+//        inter_f("mi") = T1("ne")*(2*G("mnie")-G("nmie"));
+        inter_f("mi") = T1("ne")*G2_g_k("mine");
+//        inter_f("mi") += Tau_t("inef")*(2*G("mnef")-G("nmef"));
+        inter_f("mi") += Tau_t("inef")*G2_g("mnef");
+
+//        inter_f("me") = T1("nf")*(2*G("mnef")-G("nmef"));
+        inter_f("me") = T1("nf")*G2_g_k("nfme");
 
 //        BlockedTensor inter_w = buildblock("intermediate W",{"oooo","vvvv","ovvo"});
 
         inter_w("mnij") = G("mnij");
         inter_w("mnij") += T1("je")*G("mnie");
-        inter_w("mnij") += T1("ie")*G("nmje");
+//        inter_w("mnij") += T1("ie")*G("nmje");
+        w_tmp("mnji") = T1("ie")*G_k("mnje");
+        inter_w("mnij") += w_tmp("mnji");
         inter_w("mnij") += 0.5*Tau("ijef")*G("mnef");
 
         inter_w("abef") = G("abef");
 //        inter_w("abef") -= T1("mb")*G("amef");    // This takes 6s total
 //        inter_w("abef") -= T1("mb")*G_k("maef");  // This still takes 6s
 //        BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
-        w_tmp.zero();
-        w_tmp("baef") -= T1("mb")*G_k("maef"); // This take 0.7s total
+//        w_tmp.zero();
+        w_tmp("baef") = -T1("mb")*G_k("maef"); // This take 0.7s total
         inter_w("abef") += w_tmp("baef");  // This take 0.9s total
-
         inter_w("abef") -= T1("ma")*G("mbef");
         inter_w("abef") += 0.5*Tau("mnab")*G("mnef");
 
         inter_w("mbej") = G("mbej");
         inter_w("mbej") += T1("jf")*G("mbef");
-        inter_w("mbej") -= T1("nb")*G("nmje");
-        inter_w("mbej") -= 0.5*Tau_tt("njbf")*G("mnef");
-        inter_w("mbej") += 0.5*T2("jnbf")*(2*G("mnef")-G("nmef"));
-        
+//        inter_w("mbej") -= T1("nb")*G("nmje");
+        w_tmp("bmej") = -T1("nb")*G_k("nmej");
+        inter_w("mbej") += w_tmp("bmej");
+//        inter_w("mbej") -= 0.5*Tau_tt("njbf")*G("mnef");
+        Tau_tt("jbnf") = Tau_tt("jnfb");
+        w_tmp("jbem") = -0.5*Tau_tt("jbnf")*G_k("nfem");
+//        inter_w("mbej") += 0.5*T2("jnbf")*(2*G("mnef")-G("nmef"));
+        T2_k("jbnf") = T2("jnbf");
+        w_tmp("jbem") += 0.5*T2_k("jbnf")*G2_g_k("nfem");
+        inter_w("mbej") += w_tmp("jbem");
+
         //inter_w abba case        
 //        BlockedTensor inter_w2 = buildblock("intermediate WMbeJ",{"ovvo"});
-        inter_w2("mbej") = -G("mbje");
-        inter_w2("mbej") -= T1("jf")*G("bmef"); // This is much faster than G("mbfe")!
-        inter_w2("mbej") += T1("nb")*G("mnje");
-        inter_w2("mbej") += 0.5*Tau_tt("jnfb")*G("nmef");
+//        inter_w2("mbej") = -G("mbje");
+//        inter_w2("mbej") -= T1("jf")*G("bmef"); // This is much faster than G("mbfe")!
+//        inter_w2("mbej") += T1("nb")*G("mnje");
+//        inter_w2("mbej") += 0.5*Tau_tt("jnfb")*G("nmef");
+        inter_w("bmej") = -G("bmej");
+        inter_w("bmej") -= T1("jf")*G("bmef");
+        inter_w("bmej") += T1("nb")*G("nmej");
+//        inter_w("bmej") += 0.5*Tau_tt("jnfb")*G("nmef");
+        Tau_tt_k("jbnf") = Tau_tt("jnfb");
+        w_tmp("jbem") = 0.5*Tau_tt_k("jbnf")*G("nfem");
+        inter_w("bmej") += w_tmp("jbem");
+//        inter_w2("mbej") = inter_w("bmej");
+
+
 
         //Compute new T1 and T2 amplitudes
         //new T1
 //        BlockedTensor t1n = buildblock("T1 new",{"ov"});
         t1n("ia") = T1("ie")*inter_f("ae");
         t1n("ia") -= T1("ma")*inter_f("mi");
-        t1n("ia") += inter_f("me")*(2*T2("imae")-T2("miae"));
-        t1n("ia") += T1("me")*(2*G("imae")-G("maie"));
-        t1n("ia") -= T2("mnae")*(2*G("mnie")-G("nmie"));
-        t1n("ia") += T2("imef")*(2*G("amef")-G("maef")); // G("amef") is much faster than G("mafe")
+//        t1n("ia") += inter_f("me")*(2*T2("imae")-T2("miae"));
+        T2_2("imae") = 2.0*T2("imae")-T2("miae");
+        t_tmp("iame") = T2_2("imae");
+        t1n("ia") += inter_f("me")*t_tmp("iame");
+//        t1n("ia") += T1("me")*(2*G("imae")-G("maie"));
+        t1n("ia") += T1("me")*G2_g_k2("iame");
+//        t1n("ia") -= T2("mnae")*(2*G("mnie")-G("nmie"));
+        t1n("ia") -= T2("nmea")*G2_g("nmei");
+//        t1n("ia") += T2("imef")*(2*G("amef")-G("maef"));
+        t1n("ia") += T2("imef")*G2_g("amef");
 //        BlockedTensor T1n = buildblock("copy of T1 new",{"ov"});
         T1n("ia") =  t1n("ia");
         t1n("ia") =  T1n("ia")*Dia("ia");
 
         //new T2
 //        BlockedTensor t2n = buildblock("T2 new",{"oovv"});
-        BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
+//        BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
         t2n("ijab") = G("ijab");
+        sum_tmp("be") = inter_f("be");
         sum_tmp("be") -= 0.5*T1("mb")*inter_f("me");
-        t2n("ijab") += T2("ijae")*(inter_f("be")+sum_tmp("be"));
-        t2n("ijab") += T2("ijeb")*(inter_f("ae")+sum_tmp("ae"));
+        t2n("ijab") += T2("ijae")*sum_tmp("be");
+//        t2n("ijab") += T2("ijeb")*sum_tmp("ae");
+        T2_k("ijbe") = T2("ijeb");
+        t_tmp("ijba") = T2_k("ijbe")*sum_tmp("ae");
+        t2n("ijab") += t_tmp("ijba");
+        sum_tmp("mj") = inter_f("mj");
         sum_tmp("mj") += 0.5*T1("je")*inter_f("me");
-        t2n("ijab") -= T2("imab")*(inter_f("mj")+sum_tmp("mj"));
-        t2n("ijab") -= T2("mjab")*(inter_f("mi")+sum_tmp("mi"));
+//        t2n("ijab") -= T2("imab")*sum_tmp("mj");
+        t_tmp("jiab") = T2_k("miab")*sum_tmp("mj");
+        t2n("ijab") -= t_tmp("jiab");
+        t2n("ijab") -= T2("mjab")*sum_tmp("mi");
         t2n("ijab") += Tau("mnab")*inter_w("mnij");
         t2n("ijab") += Tau("ijef")*inter_w("abef");
-        t2n("ijab") += (T2("imae")-T2("miae"))*inter_w("mbej");
-        t2n("ijab") -= T1("ie")*T1("ma")*G("mjeb");
-        t2n("ijab") += T2("imae")*(inter_w("mbej")+inter_w2("mbej"));
-        t2n("ijab") += T2("mibe")*inter_w2("maej");
-        t2n("ijab") -= T1("ie")*T1("mb")*G("maje");
-        t2n("ijab") += T2("mjae")*inter_w2("mbei");
-        t2n("ijab") -= T1("je")*T1("ma")*G("mbie");
-        t2n("ijab") += (T2("jmbe")-T2("mjbe"))*inter_w("maei");
-        t2n("ijab") -= T1("je")*T1("mb")*G("miea");
-        t2n("ijab") += T2("jmbe")*(inter_w("maei")+inter_w2("maei"));
-        t2n("ijab") += T1("ie")*G("ejab");  // This is much faster than G("jeba")
-        t2n("ijab") += T1("je")*G("abie");  // much faster than G("ieab")
-        t2n("ijab") -= T1("ma")*G("ijmb");
-        t2n("ijab") -= T1("mb")*G("jima");
+        // (1)
+//        T2_2("imae") = 2.0*T2("imae")-T2("miae");
+        T2_2_k("iame") = T2_2("imae");
+        w_tmp("mejb") = inter_w("mbej");
+        t_tmp("iajb") = T2_2_k("iame")*w_tmp("mejb");
+        // (2)
+//        T2_k("iame") = T2("imae");
+        w_tmp("mejb") = inter_w("bmej");
+        t_tmp("iajb") += T2_k("iame")*w_tmp("mejb");
+        // (3)
+        T2_k("ibme") = T2("mibe");
+//        w_tmp("meja") = inter_w("amej");
+        t2_tmp("ibja") = T2_k("ibme")*w_tmp("meja");
+        t_tmp("iajb") += t2_tmp("ibja");
+        // (4)
+        t2_tmp("ajeb") = -T1("ma")*G("mjeb");
+        t2_tmp("eajb") = t2_tmp("ajeb");
+//        t_tmp("ejba") = -T1("ma")*G_k("ejbm");
+//        t2_tmp("ejab") = t_tmp("ejba");   // This is even slower..
+        // (5)
+        t2_tmp("ejab") = -T1("mb")*G("ejam");
+//        t2_tmp("ejab") -= T1("mb")*G("ejam");
+        t2_tmp("eajb") += t2_tmp("ejab");
+        t_tmp("iajb") += T1("ie")*t2_tmp("eajb"); // for both (4) and (5)
+        t2n("ijab") += t_tmp("iajb");  // account for (1) --(5)
+        t2n("ijab") += t_tmp("jbia");  // account for (1)'--(5)'
+
+
+//        t2n("ijab") += (T2("imae")-T2("miae"))*inter_w("mbej");  // 1
+//        t2n("ijab") -= T1("ie")*T1("ma")*G("mjeb");
+//        t2n("ijab") += T2("imae")*inter_w("mbej");  // 1
+//        t2n("ijab") += T2("imae")*inter_w("bmej");
+
+//        t2n("ijab") += T2("mibe")*inter_w("amej");
+//        t2n("ijab") -= T1("ie")*T1("mb")*G("maje");
+//        t2n("ijab") += T2("mjae")*inter_w("bmei");
+//        t2n("ijab") -= T1("je")*T1("ma")*G("mbie");
+//        t2n("ijab") += (T2("jmbe")-T2("mjbe"))*inter_w("maei");  // 1
+//        t2n("ijab") -= T1("je")*T1("mb")*G("miea");
+//        t2n("ijab") += T2("jmbe")*inter_w("maei");  // 1
+//        t2n("ijab") += T2("jmbe")*inter_w("amei");
+
+        t2n("ijab") += T1("ie")*G("ejab");
+//        t2n("ijab") += T1("je")*G("abie");
+        t_tmp("jiab") = T1("je")*G_k("eiab");
+        t2n("ijab") += t_tmp("jiab");
+//        t2n("ijab") -= T1("ma")*G("ijmb"); // 40ms
+        t_tmp("ajib") = -T1("ma")*G("mjib"); // 6ms
+        t2n("ijab") += t_tmp("ajib");  // 4ms
+
+        t2n("ijab") -= T1("mb")*G("ijam");
 //        BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
-        T2n("ijab") = t2n("ijab");
-        t2n("ijab") = T2n("ijab") * Dijab("ijab");
+        t_tmp("ijab") = t2n("ijab");
+        t2n("ijab") = t_tmp("ijab") * Dijab("ijab");
 //        t2n.print(stdout,true);
 
         //compute new CCSD energy
 //        BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
-        Tau_new("ijab") = t2n("ijab");
-        Tau_new("ijab") += t1n("ia")*t1n("jb");
+//        Tau_new("ijab") = t2n("ijab");
+//        Tau_new("ijab") += t1n("ia")*t1n("jb");
+        t_tmp("iajb") = t1n("ia")*t1n("jb");
+        Tau("ijab") = t2n("ijab");
+        Tau("ijab") += t_tmp("iajb");
+        Tau_t("ijab") = t2n("ijab");
+        Tau_t("ijab") += 0.5*t_tmp("iajb");
+        Tau_tt("ijab") = t2n("ijab");
+        Tau_tt("ijab") += 2.0*t_tmp("iajb");
 //        BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
-        Tau_new2_2("ijab") = 2*Tau_new("ijab")-Tau_new("jiab");
+//        Tau_new2_2("ijab") = 2*Tau_new("ijab")-Tau_new("jiab");
+        Tau_new2_2("ijab") = 2*Tau("ijab")-Tau("jiab");
         double Eccn =  G("ijab")*Tau_new2_2("ijab");
         //compute RMS in T1 and T2 amplitudes
 //        BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
