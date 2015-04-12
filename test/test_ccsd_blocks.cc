@@ -429,15 +429,16 @@ void ccsd()
         inter_w("mnij") += w_tmp("mnji");
         inter_w("mnij") += 0.5*Tau("ijef")*G("mnef");
 
-        inter_w("abef") = G("abef");
+//        inter_w("abef") = G("abef"); // take 1.1s?
 //        inter_w("abef") -= T1("mb")*G("amef");    // This takes 6s total
 //        inter_w("abef") -= T1("mb")*G_k("maef");  // This still takes 6s
 //        BlockedTensor w_tmp = buildblock("Wtmp",{"vvvv"});
-//        w_tmp.zero();
+//        inter_w.block("vvvv").zero(); // 0.2s
         w_tmp("baef") = -T1("mb")*G_k("maef"); // This take 0.7s total
-        inter_w("abef") += w_tmp("baef");  // This take 0.9s total
+        inter_w("abef") = w_tmp("baef");  // 0.9s when += , 1.1s when =
         inter_w("abef") -= T1("ma")*G("mbef");
         inter_w("abef") += 0.5*Tau("mnab")*G("mnef");
+//        inter_w("abef") += G("abef"); // take 0.8s
 
         inter_w("mbej") = G("mbej");
         inter_w("mbej") += T1("jf")*G("mbef");
@@ -506,6 +507,8 @@ void ccsd()
         t2n("ijab") -= t_tmp("jiab");
         t2n("ijab") -= T2("mjab")*sum_tmp("mi");
         t2n("ijab") += Tau("mnab")*inter_w("mnij");
+
+        t2n("ijab") += Tau("ijef")*G("abef");  // 0.6s
         t2n("ijab") += Tau("ijef")*inter_w("abef");
         // (1)
 //        T2_2("imae") = 2.0*T2("imae")-T2("miae");
