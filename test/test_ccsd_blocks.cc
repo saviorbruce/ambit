@@ -323,7 +323,6 @@ void ccsd()
     T2_2("ijab") = 2.0*T2("ijab")-T2("jiab");
     double e_mp2 = T2_2("ijab")*G("ijab");
 //    double e_mp2 = G("ijab")*(2*T2("ijab")-T2("jiab"));
-    print("T2[0][0][0][0]=%lf \n",T2.block("oovv").data()[0]);
     print("  MP2 Correlation Energy: %20.14lf\n", e_mp2);
     print("  Total MP2 Energy:       %20.14lf\n\n", e_scf+e_mp2);
 
