@@ -92,6 +92,7 @@ void ccsd()
     
     // Build 2<pq|rs>-<pr|qs>
     Tensor g2_g = build("2<pq|rs>-<pr|qs>", AO4);
+
     g2_g("mu,nu,rho,sigma") = 2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma");
 
     Tensor Ft = build("Ft", AO2);
@@ -136,6 +137,7 @@ void ccsd()
 
         F("mu,nu") = H("mu,nu");
         F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
+
 //        F.print(stdout, true);
 
         // Calculate energy
@@ -229,7 +231,7 @@ void ccsd()
     std::vector<size_t> nso_list;
     std::vector<size_t> ndo_list;
     std::vector<size_t> nvo_list;
-    for (int i=0;i<nso;++i) {
+    for (size_t i=0;i<nall;++i) {
         nso_list.push_back(i);
         if (i<ndocc) ndo_list.push_back(i);
         else nvo_list.push_back(i);
@@ -252,6 +254,7 @@ void ccsd()
         Gao.block("hhhh")("pqrs") = g("pqrs");
         BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"ghhh","hghh"});
         Gtmp("pxyz") = C("pw")*Gao("wxyz");
+//        Gao.~BlockedTensor();
         Gtmp("xpyz") = Gtmp("pxyz");
         BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"gghh"});
         Gtmp2("qpyz") = C("qx")*Gtmp("xpyz");
@@ -271,7 +274,7 @@ void ccsd()
     Tensor t_eigev = Tensor::build(kCore, "eigenvalues", {nall});
     IndexRange all = {{0L, nall}};
     t_eigev(all) = Feigen["eigenvalues"](all);
-    std::vector<double> e_eigev = t_eigev.data();
+//    std::vector<double> e_eigev = t_eigev.data();
 
 
 //     Construct denominators
@@ -320,6 +323,7 @@ void ccsd()
     T2_2("ijab") = 2.0*T2("ijab")-T2("jiab");
     double e_mp2 = T2_2("ijab")*G("ijab");
 //    double e_mp2 = G("ijab")*(2*T2("ijab")-T2("jiab"));
+    print("T2[0][0][0][0]=%lf \n",T2.block("oovv").data()[0]);
     print("  MP2 Correlation Energy: %20.14lf\n", e_mp2);
     print("  Total MP2 Energy:       %20.14lf\n\n", e_scf+e_mp2);
 
@@ -341,8 +345,8 @@ void ccsd()
     BlockedTensor sum_tmp = buildblock("tmp for sum",{"oo","vv"});
     BlockedTensor t2n = buildblock("T2 new",{"oovv"});
 //    BlockedTensor T2n = buildblock("copy of t2n",{"oovv"});
-    BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
-    BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
+//    BlockedTensor Tau_new = buildblock("new Tau",{"oovv"});
+//    BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
     BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
     BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
 
@@ -577,10 +581,7 @@ void ccsd()
         Tau_t("ijab") += 0.5*t_tmp("iajb");
         Tau_tt("ijab") = t2n("ijab");
         Tau_tt("ijab") += 2.0*t_tmp("iajb");
-//        BlockedTensor Tau_new2_2 = buildblock("new Tau2_2",{"oovv"});
-//        Tau_new2_2("ijab") = 2*Tau_new("ijab")-Tau_new("jiab");
-        Tau_new2_2("ijab") = 2*Tau("ijab")-Tau("jiab");
-        double Eccn =  G("ijab")*Tau_new2_2("ijab");
+        double Eccn = Tau("ijab")*G2_g("ijab");
         //compute RMS in T1 and T2 amplitudes
 //        BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
         delta_t1("ia") = t1n("ia")-T1("ia");
@@ -590,11 +591,11 @@ void ccsd()
         double T2_change = delta_t2("ijab")*delta_t2("ijab");
 
         if (settings::rank == 0)
-            printf("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
+            print("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
                    iter++, Eccn, Eccn - e_ccsd, std::sqrt(T1_change), std::sqrt(T2_change));
 
         // If converged, print final results
-        if (std::fabs(Eccn - e_ccsd) < 1.0e-10 & std::sqrt(T1_change) < 1.0e-10 & std::sqrt(T2_change) < 1.0e-10) {
+        if (std::fabs(Eccn - e_ccsd) < 1.0e-12 & std::sqrt(T1_change) < 1.0e-7 & std::sqrt(T2_change) < 1.0e-7) {
             converged = true;
             print("  CCSD has converged!\n  CCSD correlation energy:      %20.14lf\n", Eccn );
         }
@@ -606,7 +607,7 @@ void ccsd()
         ambit::timer::timer_pop();
 
         if (iter > maxiter) {
-            printf("  CCSD has not converged in %d iterations!\n", maxiter);
+            print("  CCSD has not converged in %d iterations!\n", maxiter);
             break;
         }
     } while (!converged);

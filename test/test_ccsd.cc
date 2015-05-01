@@ -123,11 +123,10 @@ void ccsd()
 
 
         F("mu,nu") = H("mu,nu");
-        F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
+        F("mu,nu") += D("rho,sigma") * ( 2.0*g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));  // Original
 
-//        F("mu,nu") += 2.0 * D("rho,sigma") * g("mu,nu,rho,sigma");
-//        F("mu,nu") -= D("rho,sigma") * g("mu,rho,nu,sigma");  // This is the most expensive step
-//                (2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));  // Original
+
+//        F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
 //        F.print(stdout, true);
 
         // Calculate energy
@@ -320,7 +319,7 @@ void ccsd()
         Tensor Wabef = build("Wabef",{nvocc,nvocc,nvocc,nvocc});
         Wabef("a,b,e,f") = Gabcd("a,b,e,f");
         // Original
-//        Wabef("a,b,e,f") -= T1("m,b")*Giabc("m,a,f,e"); // This is the most expensive step
+        Wabef("a,b,e,f") -= T1("m,b")*Giabc("m,a,f,e"); // This is the most expensive step
         // improved
 //        Wabef("a,b,e,f") -= T1("m,b")*Gaibc("a,m,e,f"); // This is still 10 times slower than the T1("m,a")*Giabc("m,b,e,f") step
 
@@ -330,11 +329,11 @@ void ccsd()
 //        Tensor Wtmp = build("W_tmp",{nvocc,nvocc,nvocc,nvocc});
 //        Wtmp("a,f,e,b") -= T1_tr("b,m")*Gabci("a,f,e,m");
 //        Wabef("a,b,e,f") += Wtmp("a,f,e,b");
-                {
-                    Tensor Wefab = build("Wefab", {nvocc, nvocc, nvocc, nvocc});
-                    Wefab("e,f,a,b") = T1("m,b") * Gabci("e,f,a,m");
-                    Wabef("a,b,e,f") -= Wefab("e,f,a,b");
-                }
+//                {
+//                    Tensor Wefab = build("Wefab", {nvocc, nvocc, nvocc, nvocc});
+//                    Wefab("e,f,a,b") = T1("m,b") * Gabci("e,f,a,m");
+//                    Wabef("a,b,e,f") -= Wefab("e,f,a,b");
+//                }
 
         Wabef("a,b,e,f") -= T1("m,a")*Giabc("m,b,e,f");
         Wabef("a,b,e,f") += 0.5*Tau("m,n,a,b")*Gijab("m,n,e,f");
