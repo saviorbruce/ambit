@@ -246,6 +246,23 @@ void ccsd()
     
     ambit::timer::timer_push("Integral Transformation");
     BlockedTensor G = buildblock("G",{"gggg"});
+//    {
+//        BlockedTensor C = buildblock("C",{"oh","vh"});
+//        C.block("vh")("pq") = Cvocc("pq");
+//        C.block("oh")("pq") = Cdocc("pq");
+//        BlockedTensor Gao = buildblock("AO basis G", {"hhhh"});
+//        Gao.block("hhhh")("pqrs") = g("pqrs");
+//        BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"ghhh"});
+//        Gtmp("pxyz") = C("pw")*Gao("wxyz");
+//        BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"ghhg","hggh"});
+//        Gtmp2("pxyq") = C("qz")*Gtmp("pxyz");
+//        Gtmp2("yqpx") = Gtmp2("pxyq");
+//        BlockedTensor Gtmp3 = buildblock("intermediate G_tmp3",{"gggh"});
+//        Gtmp3("rqpx") = C("ry")*Gtmp2("yqpx");
+//        BlockedTensor G_c = buildblock("G_c",{"gggg"});
+//        G_c("rqps") = C("sx")*Gtmp3("rqpx");
+//        G("pqrs") = G_c("prqs");  // <pq|rs> = (pr|qs)
+//    }
     {
         BlockedTensor C = buildblock("C",{"oh","vh"});
         C.block("vh")("pq") = Cvocc("pq");
@@ -254,7 +271,6 @@ void ccsd()
         Gao.block("hhhh")("pqrs") = g("pqrs");
         BlockedTensor Gtmp = buildblock("intermediate G_tmp",{"ghhh","hghh"});
         Gtmp("pxyz") = C("pw")*Gao("wxyz");
-//        Gao.~BlockedTensor();
         Gtmp("xpyz") = Gtmp("pxyz");
         BlockedTensor Gtmp2 = buildblock("intermediate G_tmp2",{"gghh"});
         Gtmp2("qpyz") = C("qx")*Gtmp("xpyz");
