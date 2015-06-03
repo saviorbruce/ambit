@@ -48,6 +48,8 @@ option(ENABLE_CXX11_SUPPORT "Enable C++11 compiler support" ON)
 
 option(CYCLOPS              "Location of the Cyclops build directory" "")
 option(ELEMENTAL            "Location of the Elemental build directory" "")
+option(ENABLE_GA            "Enable Global Array Implementation" OFF)
+option(GA                   "Location of the Global Array directory" "")
 
 # include cmake modules as needed
 include(ConfigVersion)
@@ -90,6 +92,10 @@ if(EXECUTABLE_SUFFIX)
    message(STATUS "Suffix ${CMAKE_EXECUTABLE_SUFFIX} will be appended to executables")
 endif()
 
+if (ENABLE_GA AND GA)
+    set(LDFLAGS "-L${GA}/lib -L/usr/local/Cellar/scalapack/2.0.2_2/lib -lga -lscalapack -larmci -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0 -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0/../../.. -lgfortran -lquadmath -lm ${LDFLAGS}")
+endif()
+
 if(LDFLAGS)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LDFLAGS}")
 endif()
@@ -108,6 +114,10 @@ endif()
 if (ENABLE_ELEMENTAL AND ELEMENTAL)
     include_directories(${ELEMENTAL}/include)
     add_definitions(-DHAVE_ELEMENTAL)
+endif()
+if (ENABLE_GA AND GA)
+    include_directories(${GA}/include)
+    add_definitions(-DHAVE_GA)
 endif()
 
 # library directory

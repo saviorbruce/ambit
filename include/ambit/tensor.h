@@ -35,7 +35,8 @@ enum TensorType {
     kCore,        // <= In-core only tensor
     kDisk,        // <= Disk cachable tensor
     kDistributed, // <= Tensor suitable for parallel distributed
-    kAgnostic     // <= Let the library decide for you.
+    kAgnostic,    // <= Let the library decide for you.
+    kGlobalArray  // <= Use the Global Array Framework
 };
 
 enum EigenvalueOrder {
@@ -453,6 +454,8 @@ public:
     //std::map<std::string, Tensor> qr() const;
 
     //Tensor inverse() const;
+
+    void test_function();
 
 
 

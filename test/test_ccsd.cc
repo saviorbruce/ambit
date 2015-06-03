@@ -123,8 +123,8 @@ void ccsd()
 
 
         F("mu,nu") = H("mu,nu");
-        F("mu,nu") += D("rho,sigma") * ( 2.0*g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));  // Original
-
+//        F("mu,nu") += D("rho,sigma") * ( 2.0*g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));  // Original
+        F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
 
 //        F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
 //        F.print(stdout, true);
@@ -151,11 +151,11 @@ void ccsd()
         // Compute RMS of D matrix
         Tensor delta_D = build("Difference in D matrix", AO2);
         delta_D("mu,nu") = D_new("mu,nu") - D("mu,nu");
-        double D_change = delta_D("mu,nu") * delta_D("mu,nu");
+        double rms_D = delta_D.norm();
 
-        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter++, Enuc + Eelec,Eelec-Eold,std::sqrt(D_change));
+        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter++, Enuc + Eelec,Eelec-Eold,rms_D);
 
-        if (std::fabs(Eelec - Eold) < 1.0e-13 && std::sqrt(D_change) < 1.0e-10) {
+        if (std::fabs(Eelec - Eold) < 1.0e-13 && rms_D < 1.0e-10) {
             converged = true;
             print("  HF has converged!\n  Final HF energy:        %20.14lf\n", Enuc + Eelec );
         }
@@ -264,6 +264,7 @@ void ccsd()
     //spin-adapted version: we only need the TIA and TIjAb amplitudes
     //the initial TIJAB = TIjAb-TJiAb;
     Tensor T1 = build("T1 amplitude",{ndocc,nvocc});
+    T1.zero();
     Tensor T2 = build("T2 amplitude",{ndocc,ndocc,nvocc,nvocc});
     T2("i,j,a,b") = Gijab("i,j,a,b")*Dijab("i,j,a,b");
 
@@ -290,8 +291,6 @@ void ccsd()
         Tensor Tau_tt = build("Tau_tt",{ndocc,ndocc,nvocc,nvocc});
         Tau_tt("i,j,a,b") = T2("i,j,a,b");
         Tau_tt("i,j,a,b") += 2.0*T1("i,a")*T1("j,b");
-
-
 
         //Form the intermediates
         // Fae
@@ -322,18 +321,6 @@ void ccsd()
         Wabef("a,b,e,f") -= T1("m,b")*Giabc("m,a,f,e"); // This is the most expensive step
         // improved
 //        Wabef("a,b,e,f") -= T1("m,b")*Gaibc("a,m,e,f"); // This is still 10 times slower than the T1("m,a")*Giabc("m,b,e,f") step
-
-        // try use permutations
-//        Tensor T1_tr = build("T1 trans",{nvocc,ndocc});
-//        T1_tr("a,i") = T1("i,a");
-//        Tensor Wtmp = build("W_tmp",{nvocc,nvocc,nvocc,nvocc});
-//        Wtmp("a,f,e,b") -= T1_tr("b,m")*Gabci("a,f,e,m");
-//        Wabef("a,b,e,f") += Wtmp("a,f,e,b");
-//                {
-//                    Tensor Wefab = build("Wefab", {nvocc, nvocc, nvocc, nvocc});
-//                    Wefab("e,f,a,b") = T1("m,b") * Gabci("e,f,a,m");
-//                    Wabef("a,b,e,f") -= Wefab("e,f,a,b");
-//                }
 
         Wabef("a,b,e,f") -= T1("m,a")*Giabc("m,b,e,f");
         Wabef("a,b,e,f") += 0.5*Tau("m,n,a,b")*Gijab("m,n,e,f");
@@ -394,7 +381,7 @@ void ccsd()
         Tensor T2n = build("copy of t2n",{ndocc,ndocc,nvocc,nvocc});
         T2n("i,j,a,b") = t2n("i,j,a,b");
         t2n("i,j,a,b") = T2n("i,j,a,b") * Dijab("i,j,a,b");
-//        t2n.print(stdout,true);
+//        t1n.print(stdout,true);
 
         //compute new CCSD energy
         Tensor Tau_new = build("new Tau",{ndocc,ndocc,nvocc,nvocc});
@@ -404,17 +391,19 @@ void ccsd()
         //compute RMS in T1 and T2 amplitudes
         Tensor delta_t1 = build("difference in T1",{ndocc,nvocc});
         delta_t1("i,a") = t1n("i,a")-T1("i,a");
-        double T1_change = delta_t1("i,a")*delta_t1("i,a");
+//        double T1_change = delta_t1("i,a")*delta_t1("i,a");
+        double rms_t1 = delta_t1.norm();
         Tensor delta_t2 = build("difference in T2",{ndocc,ndocc,nvocc,nvocc});
         delta_t2("i,j,a,b") = t2n("i,j,a,b")-T2("i,j,a,b");
-        double T2_change = delta_t2("i,j,a,b")*delta_t2("i,j,a,b");
+        double rms_t2 = delta_t2.norm();
+//        double T2_change = delta_t2("i,j,a,b")*delta_t2("i,j,a,b");
 
-        if (settings::rank == 0)
-            printf("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
-                   iter++, Eccn, Eccn - e_ccsd, std::sqrt(T1_change), std::sqrt(T2_change));
+
+        print("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
+                   iter, Eccn, Eccn - e_ccsd, /*std::sqrt(T1_change), std::sqrt(T2_change),*/rms_t1, rms_t2);
 
         // If converged, print final results
-        if (std::fabs(Eccn - e_ccsd) < 1.0e-10 & std::sqrt(T1_change) < 1.0e-10 & std::sqrt(T2_change) < 1.0e-10) {
+        if (std::fabs(Eccn - e_ccsd) < 1.0e-10 & rms_t1 < 1.0e-10 & rms_t2 < 1.0e-10) {
             converged = true;
             print("  CCSD has converged!\n  CCSD correlation energy:      %20.14lf\n", Eccn );
         }
@@ -425,8 +414,8 @@ void ccsd()
 
         ambit::timer::timer_pop();
 
-        if (iter > maxiter) {
-            printf("  CCSD has not converged in %d iterations!\n", maxiter);
+        if (++iter > maxiter) {
+            print("  CCSD has not converged in %d iterations!\n", maxiter);
             break;
         }
     } while (!converged);
@@ -476,7 +465,12 @@ int main(int argc, char* argv[])
     if (argc > 1) {
         if (settings::distributed_capable && strcmp(argv[1], "cyclops") == 0) {
             tensor_type = kDistributed;
-            printf("  *** Testing distributed tensors. ***\n");
+            printf("  *** Testing cyclops tensors. ***\n");
+        }
+        else if (settings::distributed_capable && strcmp(argv[1], "ga") == 0) {
+            tensor_type = kGlobalArray;
+            ambit::print("  *** Testing GlobalArray tensors. ***\n");
+            ambit::print("      Running in %d processes.\n", ambit::settings::nprocess);
         }
         else {
             printf("  *** Unknown parameter given ***\n");

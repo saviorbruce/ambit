@@ -92,7 +92,6 @@ void ccsd()
     
     // Build 2<pq|rs>-<pr|qs>
     Tensor g2_g = build("2<pq|rs>-<pr|qs>", AO4);
-
     g2_g("mu,nu,rho,sigma") = 2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma");
 
     Tensor Ft = build("Ft", AO2);
@@ -138,12 +137,8 @@ void ccsd()
         F("mu,nu") = H("mu,nu");
         F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
 
-//        F.print(stdout, true);
-
         // Calculate energy
         Eelec = D("mu,nu") * (H("mu,nu") + F("mu,nu"));
-
-
 
         // Transform the Fock matrix
         Ft("i,j") = Smhalf("mu,i") * Smhalf("nu,j") * F("mu,nu");
@@ -162,11 +157,11 @@ void ccsd()
         // Compute RMS of D matrix
         Tensor delta_D = build("Difference in D matrix", AO2);
         delta_D("mu,nu") = D_new("mu,nu") - D("mu,nu");
-        double D_change = delta_D("mu,nu") * delta_D("mu,nu");
+        double rms_D = delta_D.norm();
 
-        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter, Enuc + Eelec,Eelec-Eold,std::sqrt(D_change));
+        print("  @RHF iter %5d: Escf = %17.12f  dE = %12.5e  RMS(D) = %12.5e\n", iter++, Enuc + Eelec,Eelec-Eold,rms_D);
 
-        if (std::fabs(Eelec - Eold) < 1.0e-13 && std::sqrt(D_change) < 1.0e-10) {
+        if (std::fabs(Eelec - Eold) < 1.0e-13 && rms_D < 1.0e-10) {
             converged = true;
             print("  HF has converged!\n  Final HF energy:        %20.14lf\n", Enuc + Eelec );
         }
@@ -600,17 +595,16 @@ void ccsd()
         //compute RMS in T1 and T2 amplitudes
 //        BlockedTensor delta_t1 = buildblock("difference in T1",{"ov"});
         delta_t1("ia") = t1n("ia")-T1("ia");
-        double T1_change = delta_t1("ia")*delta_t1("ia");
+        double rms_t1 = delta_t1.norm();
 //        BlockedTensor delta_t2 = buildblock("difference in T2",{"oovv"});
         delta_t2("ijab") = t2n("ijab")-T2("ijab");
-        double T2_change = delta_t2("ijab")*delta_t2("ijab");
+        double rms_t2 = delta_t2.norm();
 
-        if (settings::rank == 0)
-            print("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
-                   iter++, Eccn, Eccn - e_ccsd, std::sqrt(T1_change), std::sqrt(T2_change));
+        print("  @CCSD iteration %2d :  E(CCSD) =%16.10f  dE = %12.5e   RMS(T1) = %12.5e   RMS(T2) = %12.5e\n",
+                   iter, Eccn, Eccn - e_ccsd, rms_t1, rms_t2);
 
         // If converged, print final results
-        if (std::fabs(Eccn - e_ccsd) < 1.0e-12 & std::sqrt(T1_change) < 1.0e-7 & std::sqrt(T2_change) < 1.0e-7) {
+        if (std::fabs(Eccn - e_ccsd) < 1.0e-12 & rms_t1 < 1.0e-9 & rms_t2 < 1.0e-9) {
             converged = true;
             print("  CCSD has converged!\n  CCSD correlation energy:      %20.14lf\n", Eccn );
         }
@@ -621,7 +615,7 @@ void ccsd()
 
         ambit::timer::timer_pop();
 
-        if (iter > maxiter) {
+        if ( ++iter > maxiter) {
             print("  CCSD has not converged in %d iterations!\n", maxiter);
             break;
         }
@@ -638,11 +632,16 @@ int main(int argc, char* argv[])
     if (argc > 1) {
         if (settings::distributed_capable && strcmp(argv[1], "cyclops") == 0) {
             tensor_type = kDistributed;
-            print("  *** Testing distributed tensors. ***\n");
+            printf("  *** Testing cyclops tensors. ***\n");
+        }
+        else if (settings::distributed_capable && strcmp(argv[1], "ga") == 0) {
+            tensor_type = kGlobalArray;
+            ambit::print("  *** Testing GlobalArray tensors. ***\n");
+            ambit::print("      Running in %d processes.\n", ambit::settings::nprocess);
         }
         else {
-            print("  *** Unknown parameter given ***\n");
-            print("  *** Testing core tensors.   ***\n");
+            printf("  *** Unknown parameter given ***\n");
+            printf("  *** Testing core tensors.   ***\n");
         }
     }
     ccsd();

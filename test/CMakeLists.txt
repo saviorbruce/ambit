@@ -34,6 +34,13 @@ if(ENABLE_CYCLOPS)
     target_link_libraries(test_distributed ambit ${Boost_LIBRARIES})
 endif()
 
+# build test_global_array
+if(ENABLE_GA)
+    add_executable(test_global_array test_global_array.cc)
+    add_dependencies(test_global_array ambit)
+    target_link_libraries(test_global_array ambit ${Boost_LIBRARIES})
+endif()
+
 set(TEST_HF_SOURCES
     test_hf.cc
 )

@@ -43,6 +43,15 @@ void slice(
         slice((CyclopsTensorImplPtr) C, (ConstCyclopsTensorImplPtr) A, Cinds, Ainds, alpha, beta);
 #endif
 
+#ifdef HAVE_GA
+    } else if (C->type() == kCore and A->type() == kGlobalArray) {
+        slice((CoreTensorImplPtr) C, (ConstGlobalArrayImplPtr) A, Cinds, Ainds, alpha, beta);
+    } else if (C->type() == kGlobalArray and A->type() == kCore) {
+        slice((GlobalArrayImplPtr) C, (ConstCoreTensorImplPtr) A, Cinds, Ainds, alpha, beta);
+    } else if (C->type() == kGlobalArray and A->type() == kGlobalArray) {
+        slice((GlobalArrayImplPtr) C, (ConstGlobalArrayImplPtr) A, Cinds, Ainds, alpha, beta);
+#endif
+
     } else {
         throw std::runtime_error("Slice cannot handle this type pairing.");
     }
@@ -654,7 +663,6 @@ void slice(
         C->data()[0] = alpha * Av + beta * Cv;
     }
     else {
-
         long_int numel = 1L;
         Dimension sizes(C->rank());
         IndexRange C2inds(C->rank());
@@ -778,5 +786,201 @@ void slice(
 }
 
 #endif
+
+#ifdef HAVE_GA
+
+/// Slice from Global Array to Core
+void slice(
+    CoreTensorImplPtr C,
+    ConstGlobalArrayImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha,
+    double beta)
+{
+    timer::timer_push("slice GlobalArray -> Core");
+    // if this is copying a single data to core tensor
+    if (C->rank() == 0) {
+        double Av = A->single_value();
+        double Cv = C->data()[0];
+        C->data()[0] = alpha * Av + beta * Cv;
+    }
+    else {
+        size_t numel = 1L;
+        Dimension sizes(C->rank());
+        IndexRange A2inds(C->rank());
+        for (int ind = 0; ind < C->rank(); ind++) {
+            sizes[ind] = Ainds[ind][1] - Ainds[ind][0];
+            A2inds[ind] = {0L, (size_t) sizes[ind]};
+            numel *= sizes[ind];
+        }
+        // check if it's a "fake" slice
+        if(numel > 0) {
+            // create a local copy of core tensor
+//            shared_ptr<CoreTensorImpl> A2(new CoreTensorImpl("A2", sizes));
+            CoreTensorImplPtr A2 = new CoreTensorImpl("A2", sizes);
+            double *A2p = A2->data().data();
+
+            // find location on global array
+            int lo[A->rank()], hi[A->rank()];
+            for (int ind = 0; ind < C->rank(); ind++) {
+                lo[ind] = Ainds[ind][0];
+                hi[ind] = Ainds[ind][1]-1;
+            }
+
+            // make ld array from sizes
+            int ld[A->rank()-1];
+            for (int ind=0; ind < C->rank()-1; ++ind)
+                ld[ind] = (int)sizes[ind+1];
+
+//            double *buff = new double[numel];
+////             read data from global array
+//            NGA_Get(A->global_array(),lo,hi,buff,ld);
+//            std::copy(buff,buff+numel,A2p);
+//            C_DAXPY(numel,1.0,buff,1,A2p,1);
+
+            NGA_Get(A->global_array(),lo,hi,A2p,ld);
+
+            // put data on C tensor
+            C->slice(A2, Cinds, A2inds, alpha, beta);
+        }
+    }
+    timer::timer_pop();
+}
+
+/// Slice from Core to Global Array
+void slice(
+    GlobalArrayImplPtr C,
+    ConstCoreTensorImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha,
+    double beta)
+{
+    timer::timer_push("slice Core -> GlobalArray");
+    if (C->rank() == 0) {
+        double Cv = C->single_value();
+        double Av = A->data()[0];
+        C->set(alpha * Av + beta * Cv);
+    }
+    else {
+        // slice data on core tensor A first
+        size_t numel = 1L;
+        Dimension sizes(C->rank());
+        IndexRange A2inds(C->rank());
+        for (int ind = 0; ind < C->rank(); ind++) {
+            sizes[ind] = Cinds[ind][1] - Cinds[ind][0];
+            A2inds[ind] = {0L, (size_t) sizes[ind]};
+            numel *= sizes[ind];
+        }
+
+        // check if it's a "fake" slice
+        if(numel > 0) {
+            shared_ptr<CoreTensorImpl> A2(new CoreTensorImpl("A2", sizes));
+            A2->slice(A, A2inds, Ainds, alpha, 0.0);
+            double *A2p = A2->data().data();
+
+            // find location on global array
+            int lo[C->rank()], hi[C->rank()];
+            for (int ind = 0; ind < C->rank(); ind++) {
+                lo[ind] = Cinds[ind][0];
+                hi[ind] = Cinds[ind][1]-1;
+            }
+
+            // make ld array from sizes
+            int ld[C->rank()-1];
+            for (int ind=0; ind<C->rank()-1; ++ind)
+                ld[ind] = (int)sizes[ind+1];
+
+            // accumulate data onto global array
+            if(beta == 0.0)
+                // replace data on C
+                NGA_Put(C->global_array(),lo,hi,A2p,ld);
+            else if(beta ==1.0) {
+                // Accumulate data on C
+                double one = 1.0;
+                NGA_Acc(C->global_array(),lo,hi,A2p,ld,&one);
+            }
+            else {
+                // Get data from C, scale beta and accumulate, then put back
+                double buff[numel];
+                NGA_Get(C->global_array(),lo,hi,buff,ld);
+                C_DAXPY(numel,beta,buff,1,A2p,1);
+                NGA_Put(C->global_array(),lo,hi,A2p,ld);
+            }
+        }
+    }
+    GA_Sync();
+
+    timer::timer_pop();
+}
+
+/// Slice from Global Array to Global Array
+void slice(
+    GlobalArrayImplPtr C,
+    ConstGlobalArrayImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha,
+    double beta)
+{
+    timer::timer_push("slice GlobalArray -> GlobalArray");
+    if(C->rank() == 0) {
+        double Cv = C->single_value();
+        C->set(alpha * A->single_value() + beta * Cv);
+    }
+    else {
+        int loA[A->rank()], hiA[A->rank()];
+        int loC[C->rank()], hiC[C->rank()];
+        for(int ind=0; ind < A->rank(); ++ind) {
+            loA[ind] = Ainds[ind][0];
+            hiA[ind] = Ainds[ind][1]-1;
+            loC[ind] = Cinds[ind][0];
+            hiC[ind] = Cinds[ind][1]-1;
+        }
+        NGA_Add_patch(&alpha,A->global_array(),loA,hiA,&beta,C->global_array(),loC,hiC,C->global_array(),loC,hiC);
+        GA_Sync();
+    }
+
+//    // "slice" is just moving the location of data
+//    // find out the shift of each index
+//    std::vector<int> shift(A->rank());
+//    for(int ind=0; ind < A->rank(); ++ind) {
+//        shift[ind] = Ainds[ind][0] - Cinds[ind][0];
+//    }
+
+//    // for getting 1 value at a time
+//    std::vector<int> lo(A->rank());
+//    std::vector<int> ld(1,1);
+//    std::vector<double> buff(1);
+
+//    // each core updates the data on it self
+//    C->iterate([&](const std::vector<size_t> &indices, double &value) {
+//        //decide if current data is in the target range
+//        bool inside = true;
+//        size_t locationA = 0;
+//        for(int ind=0; ind<indices.size(); ++ind) {
+//            // if any index is outside, break
+//            if(indices[ind] < Cinds[ind][0] && indices[ind] >= Cinds[ind][1]) {
+//                inside = false;
+//                break;
+//            }
+//        }
+//        // if inside, determine the corresponding locatation in A
+//        for(int ind=0; ind<lo.size(); ++ind)
+//            lo[ind] = (int)indices[ind] + shift[ind];
+////        read data (1 value) from A
+//        if (inside) {
+//            NGA_Get(A->global_array(),lo.data(),lo.data(),buff.data(),ld.data());
+//            value = alpha * buff[0] + beta * value;
+//        }
+//    });
+
+
+    timer::timer_pop();
+}
+
+#endif
+
 
 }

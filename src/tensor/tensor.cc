@@ -15,7 +15,10 @@
 
 // include header files to specific tensor types supported.
 #if defined(HAVE_CYCLOPS)
-#   include "cyclops/cyclops.h"
+    #include "cyclops/cyclops.h"
+#endif
+#if defined(HAVE_GA)
+    #include "global_array/global_array.h"
 #endif
 
 namespace ambit {
@@ -37,6 +40,8 @@ bool debug = false;
 size_t memory = 1 * 1024 * 1024 * 1024;
 
 #if defined(HAVE_CYCLOPS)
+const bool distributed_capable = true;
+#elif defined(HAVE_GA)
 const bool distributed_capable = true;
 #else
 const bool distributed_capable = false;
@@ -75,9 +80,13 @@ int initialize(int argc, char* * argv)
 
 #if defined(HAVE_CYCLOPS)
     return cyclops::initialize(argc, argv);
-#else
-    return 0;
 #endif
+
+#if defined(HAVE_GA)
+    return global_array::initialize(argc,argv);
+#endif
+
+    return 0;
 }
 
 void finalize()
@@ -89,6 +98,10 @@ void finalize()
 
 #if defined(HAVE_CYCLOPS)
     cyclops::finalize();
+#endif
+
+#if defined(HAVE_GA)
+    global_array::finalize();
 #endif
 
     timer::report();
@@ -120,6 +133,8 @@ Tensor Tensor::build(TensorType type, const std::string& name, const Dimension& 
     if (type == kAgnostic) {
         #if defined(HAVE_CYCLOPS)
         type = kDistributed;
+        #elif defined(HAVE_GA)
+        type = kGlobalArray;
         #else
         type = kCore;
         #endif
@@ -139,7 +154,14 @@ Tensor Tensor::build(TensorType type, const std::string& name, const Dimension& 
             #else
             throw std::runtime_error("Tensor::build: Unable to construct distributed tensor object");
             #endif
+            break;
 
+        case kGlobalArray:
+            #if defined(HAVE_GA)
+            newObject.tensor_.reset(new global_array::GlobalArrayImpl(name, dims));
+            #else
+            throw std::runtime_error("Tensor::build: Unable to construct GlobalArray tensor object");
+            #endif
             break;
 
         default:
@@ -459,6 +481,11 @@ bool Tensor::operator==(const Tensor& other) const
 bool Tensor::operator!=(const Tensor& other) const
 {
     return tensor_ != other.tensor_;
+}
+
+void Tensor::test_function()
+{
+    return tensor_->test_function();
 }
 
 }

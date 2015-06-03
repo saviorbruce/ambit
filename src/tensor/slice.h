@@ -9,6 +9,10 @@
 #include "cyclops/cyclops.h"
 #endif
 
+#ifdef HAVE_GA
+#include "global_array/global_array.h"
+#endif
+
 namespace ambit {
 
 void slice(
@@ -75,6 +79,32 @@ void slice(
     const IndexRange& Ainds,
     double alpha = 1.0,
     double beta = 0.0);
+#endif
+
+#ifdef HAVE_GA
+void slice(
+    CoreTensorImplPtr C,
+    ConstGlobalArrayImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha = 1.0,
+    double beta = 0.0);
+void slice(
+    GlobalArrayImplPtr C,
+    ConstCoreTensorImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha = 1.0,
+    double beta = 0.0);
+void slice(
+    GlobalArrayImplPtr C,
+    ConstGlobalArrayImplPtr A,
+    const IndexRange& Cinds,
+    const IndexRange& Ainds,
+    double alpha = 1.0,
+    double beta = 0.0);
+
+
 #endif
 
 }

@@ -123,6 +123,10 @@ def parse_input():
             action='store',
             default=None,
             help="""Path to the location of Elemental. This location should have include and libEl.a in it.""")
+    group.add_argument('--ga',
+            action='store',
+            default=None,
+            help="""Path to the location of Global Array. This location should have include and lib in it.""")
 
     group = parser.add_argument_group('Math libraries')
     group.add_argument('--mkl',
@@ -311,6 +315,10 @@ def gen_cmake_command(args):
         print("Error: cyclops feature requires elemental.");
         sys.exit(1)
 
+    if args.ga and not args.mpi:
+        print("Error: Global Array requested but MPI was not.")
+        sys.exit(1)
+
     # create cmake command from flags
 
     command = ''
@@ -330,6 +338,7 @@ def gen_cmake_command(args):
     command += ' -DENABLE_VECTORIZATION=%s'  % translate_cmake(args.vectorization)
     command += ' -DENABLE_CYCLOPS=%s'        % translate_cmake(args.cyclops)
     command += ' -DENABLE_ELEMENTAL=%s'      % translate_cmake(args.elemental)
+    command += ' -DENABLE_GA=%s'             % translate_cmake(args.ga)
     #command += ' -DENABLE_CSR=%s'            % translate_cmake(args.csr)
     command += ' -DENABLE_SCALAPACK=%s'      % translate_cmake(args.scalapack)
     #command += ' -DENABLE_SCALASCA=%s'       % translate_cmake(args.scalasca)
@@ -403,6 +412,8 @@ def gen_cmake_command(args):
         command += ' -DCYCLOPS={0}'.format(args.cyclops)
     if args.elemental:
         command += ' -DELEMENTAL={0}'.format(args.elemental)
+    if args.ga:
+        command += ' -DGA={0}'.format(args.ga)
     if args.extra_cc_flags:
         command += ' -DEXTRA_C_FLAGS="%s"' % args.extra_cc_flags
     if args.extra_cxx_flags:

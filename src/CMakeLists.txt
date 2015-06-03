@@ -42,6 +42,11 @@ if(ENABLE_CYCLOPS)
     list(APPEND TENSOR_HEADERS tensor/cyclops/cyclops.h)
     list(APPEND TENSOR_SOURCES tensor/cyclops/cyclops.cc)
 endif()
+# if we have MPI and Global Array is enabled
+if(ENABLE_GA)
+    list(APPEND TENSOR_HEADERS tensor/global_array/global_array.h)
+    list(APPEND TENSOR_SOURCES tensor/global_array/global_array.cc)
+endif()
 
 # build libray
 add_library(ambit SHARED ${TENSOR_SOURCES} ${TENSOR_HEADERS})
@@ -50,7 +55,11 @@ if(ENABLE_CYCLOPS)
     target_link_libraries(ambit ${CYCLOPS}/lib/libctf.a ${ELEMENTAL}/libEl.a ${ELEMENTAL}/external/pmrrr/libpmrrr.a ${MPI_LIBRARIES})
 endif()
 
-target_link_libraries(ambit ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${Boost_LIBRARIES})
+if(ENABLE_GA)
+    target_link_libraries(ambit "-L${GA}/lib -L/usr/local/Cellar/scalapack/2.0.2_2/lib -lga -lscalapack -larmci -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0 -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0/../../.. -lgfortran -lquadmath -lm ${MPI_LIBRARIES}")
+endif()
+
+target_link_libraries(ambit ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${Boost_LIBRARIES} ${EXTERNAL_LIBS})
 
 install(TARGETS ambit LIBRARY DESTINATION lib)
 
