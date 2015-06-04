@@ -56,7 +56,11 @@ if(ENABLE_CYCLOPS)
 endif()
 
 if(ENABLE_GA)
-    target_link_libraries(ambit "-L${GA}/lib -L/usr/local/Cellar/scalapack/2.0.2_2/lib -lga -lscalapack -larmci -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0 -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0/../../.. -lgfortran -lquadmath -lm ${MPI_LIBRARIES}")
+    execute_process(COMMAND ${GA}/bin/ga-config -flibs OUTPUT_VARIABLE GA_FLIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${GA}/bin/ga-config -ldflags OUTPUT_VARIABLE GA_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${GA}/bin/ga-config -libs OUTPUT_VARIABLE GA_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    target_link_libraries(ambit ${GA_FLIBS} ${GA_LDFLAGS} ${GA_LIBS} ${MPI_LIBRARIES})
+#    target_link_libraries(ambit "-L${GA}/lib -L/usr/local/Cellar/scalapack/2.0.2_2/lib -lga -lscalapack -larmci -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0 -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0/../../.. -lgfortran -lquadmath -lm ${MPI_LIBRARIES}")
 endif()
 
 target_link_libraries(ambit ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${Boost_LIBRARIES} ${EXTERNAL_LIBS})

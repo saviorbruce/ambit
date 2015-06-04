@@ -483,9 +483,4 @@ bool Tensor::operator!=(const Tensor& other) const
     return tensor_ != other.tensor_;
 }
 
-void Tensor::test_function()
-{
-    return tensor_->test_function();
-}
-
 }

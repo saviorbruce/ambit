@@ -92,10 +92,6 @@ if(EXECUTABLE_SUFFIX)
    message(STATUS "Suffix ${CMAKE_EXECUTABLE_SUFFIX} will be appended to executables")
 endif()
 
-if (ENABLE_GA AND GA)
-    set(LDFLAGS "-L${GA}/lib -L/usr/local/Cellar/scalapack/2.0.2_2/lib -lga -lscalapack -larmci -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0 -L/usr/local/Cellar/gcc/5.1.0/lib/gcc/5/gcc/x86_64-apple-darwin14.3.0/5.1.0/../../.. -lgfortran -lquadmath -lm ${LDFLAGS}")
-endif()
-
 if(LDFLAGS)
    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LDFLAGS}")
 endif()
