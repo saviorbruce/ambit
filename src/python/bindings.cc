@@ -175,6 +175,7 @@ BOOST_PYTHON_MODULE (pyambit)
             .def("slice", &Tensor::slice)
             .def("contract", &Tensor::contract)
             .def("syev", &Tensor::syev)
+            .def("geev", &Tensor::geev)
             .def("power", &Tensor::power)
             .def("norm", &Tensor::norm)
             .def("zero", &Tensor::zero)
@@ -182,6 +183,7 @@ BOOST_PYTHON_MODULE (pyambit)
             .def("min", &Tensor::min)
             .def("max", &Tensor::max)
             .def("printf", &Tensor::print,tensor_print_ov())
+            .def("reset", &Tensor::reset)
             .def("__array_interface__", tensor_array_interface);
 
     def("initialize", initialize_wrapper);
