@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <stdexcept>
 
 #if defined(DEBUG)
 //#include <util/print.h>

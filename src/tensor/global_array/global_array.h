@@ -2,6 +2,7 @@
 #define GLOBAL_ARRAY_H
 
 #include "tensor/tensorimpl.h"
+#include <algorithm>
 #include "ga.h"
 #include "macdecls.h"
 
