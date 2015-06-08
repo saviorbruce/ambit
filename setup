@@ -113,7 +113,7 @@ def parse_input():
             help='enable SGI MPT [default: %(default)s]')
     group.add_argument('--omp',
             action='store_true',
-            default=True,
+            default=False,
             help='enable OpenMP [default: %(default)s]')
     group.add_argument('--cyclops',
             action='store',
