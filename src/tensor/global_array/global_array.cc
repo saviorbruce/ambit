@@ -240,7 +240,7 @@ void GlobalArrayImpl::permute(
             int lo[ga_rank],hi[ga_rank];
             NGA_Distribution(global_array_,me,lo,hi);
             // check if there is actually data on me
-            if (loC[0] < 0 && hiC[0] < 0) {
+            if (lo[0] < 0 && hi[0] < 0) {
                 GA_Sync();
                 return;
             }
