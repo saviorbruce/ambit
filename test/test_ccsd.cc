@@ -214,14 +214,6 @@ void ccsd()
     Gijkl({{0,ndocc},{0,ndocc},{0,ndocc},{0,ndocc}})=Gpqrs({{0,ndocc},{0,ndocc},{0,ndocc},{0,ndocc}});
 
 
-    /* <ab|ci> is more efficient when contracting*/
-    Tensor Gabci = build("Gabci",{nvocc,nvocc,nvocc,ndocc});
-    Gabci({{0,nvocc},{0,nvocc},{0,nvocc},{0,ndocc}})=Gpqrs({{ndocc,nall},{ndocc,nall},{ndocc,nall},{0,ndocc}});
-    /* <ai|bc> is more efficient when contracting*/
-    Tensor Gaibc = build("Gaibc",{nvocc,ndocc,nvocc,nvocc});
-    Gaibc({{0,nvocc},{0,ndocc},{0,nvocc},{0,nvocc}})=Gpqrs({{ndocc,nall},{0,ndocc},{ndocc,nall},{ndocc,nall}});
-
-
     ambit::timer::timer_pop();
 
     // the energy eigenvalues
@@ -421,51 +413,21 @@ void ccsd()
     } while (!converged);
 
 
-    // CCSD(T) Spin-orbital Version
-    //http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming:project6
 
-    // build t3 denominators
-//    Tensor Dijkabc = build("Dijkabc",{ndocc,ndocc,ndocc,nvocc,nvocc,nvocc});
-//    Dijkabc.iterate([&](const std::vector<size_t>& indices, double& value) {
-//        value = 1.0/(t_eigev.data()[indices[0]]+t_eigev.data()[indices[1]]+t_eigev.data()[indices[2]]
-//                -t_eigev.data()[indices[3]+ndocc]-t_eigev.data()[indices[4]+ndocc]-t_eigev.data()[indices[5]+ndocc] );
-//    });
-
-//    //convert every needed thing to Spin-orbital version
-//    Tensor t1_so = build("t1 in SO",{2*ndocc,2*nvocc});
-//    t1_so("i,j") = T1("i,j");
-//    Tensor t2_so = build("t2 in SO",{2*ndocc,2*nvocc});
-
-//    Tensor T3Dc = build("Dijkabc Tijkabc (c) ",{ndocc,ndocc,ndocc,nvocc,nvocc,nvocc});
-
-
-
-
-//    C.print(stdout, true);
-//    C.iterate([](const std::vector<size_t>& /*indices*/, double& value) {
-//        value += 1.0;
-//    });
-//    C.print(stdout, true);
-
-//    C.citerate([](const std::vector<size_t>& indices, const double& value) {
-//        printf("rank %d: C[%lu, %lu] %lf\n", settings::rank, indices[0], indices[1], value);
-//    });
-
-//    g.citerate([](const std::vector<size_t>& indices, const double& value) {
-//        printf("g[%lu, %lu, %lu, %lu] %lf\n", indices[0], indices[1], indices[2], indices[3], value);
-//    });
 }
 
 int main(int argc, char* argv[])
 {
     srand(time(nullptr));
     ambit::settings::timers = true;
+//    ambit::settings::debug = true;
     ambit::initialize(argc, argv);
 
     if (argc > 1) {
         if (settings::distributed_capable && strcmp(argv[1], "cyclops") == 0) {
             tensor_type = kDistributed;
-            printf("  *** Testing cyclops tensors. ***\n");
+            ambit::print("  *** Testing cyclops tensors. ***\n");
+            ambit::print("      Running in %d processes.\n", ambit::settings::nprocess);
         }
         else if (settings::distributed_capable && strcmp(argv[1], "ga") == 0) {
             tensor_type = kGlobalArray;

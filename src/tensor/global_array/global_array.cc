@@ -239,6 +239,11 @@ void GlobalArrayImpl::permute(
             int me = settings::rank;
             int lo[ga_rank],hi[ga_rank];
             NGA_Distribution(global_array_,me,lo,hi);
+            // check if there is actually data on me
+            if (loC[0] < 0 && hiC[0] < 0) {
+                GA_Sync();
+                return;
+            }
             // The dimensions for local core tensors
             Dimension dims_A_part(ga_rank);
             Dimension dims_C_part(ga_rank);
@@ -339,23 +344,22 @@ void GlobalArrayImpl::contract(
     const GlobalArrayImpl* cB = dynamic_cast<const GlobalArrayImpl*>((B));
     int tB = cB->global_array_;
 
-
 //     A new way: copy needed data to local and use core tensor to do contraction
     scale(beta);
-//    if(ga_rank == 0) {
-//        GlobalArrayImpl* tmp = new GlobalArrayImpl("tmp",A->dims());
-//        tmp->permute(B, Ainds, Binds, 1.0, 0.0);
-//        single_value_ += alpha * GA_Ddot(tA, tmp->global_array());
-//        delete tmp;
-////        single_value_ += alpha * GA_Ddot(tA, tB);
-//    }
-//    else {
 
     // Find out what is on processor "me"
     int me = settings::rank;
-    int loC[ga_rank],hiC[ga_rank];
-    if (ga_rank != 0)
-        NGA_Distribution(global_array_,me,loC,hiC);
+    std::vector<int> loC(ga_rank,0);
+    std::vector<int> hiC(ga_rank,0);
+    if (ga_rank != 0) {
+        NGA_Distribution(global_array_,me,loC.data(),hiC.data());
+        // check if there is actually data on me
+        if (loC[0] < 0) {
+            GA_Sync();
+            return;
+        }
+    }
+
 
     // find the place of Cinds in Ainds and Binds
     typedef std::pair<int,int> intPair;
@@ -444,18 +448,17 @@ void GlobalArrayImpl::contract(
          single_value_ += alpha * local_C_part->data()[0];
     }
     else {
-
         ambit::timer::timer_push("update data");
 
         // Get Access to local data on C
         double *C_data;
         int ld[ga_rank-1];
-        NGA_Access(global_array_,loC,hiC,&C_data,ld);
+        NGA_Access(global_array_,loC.data(),hiC.data(),&C_data,ld);
 
         // accumulate data to local C
         C_DAXPY(local_C_part->data().size(),alpha,local_C_part->data().data(),1,C_data,1);
         // update data in GA
-        NGA_Release_update(global_array_,loC,hiC);
+        NGA_Release_update(global_array_,loC.data(),hiC.data());
 
         ambit::timer::timer_pop();
     }

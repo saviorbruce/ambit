@@ -51,18 +51,22 @@ endif()
 # build libray
 add_library(ambit SHARED ${TENSOR_SOURCES} ${TENSOR_HEADERS})
 
+if(ENABLE_MPI)
+    target_link_libraries(ambit ${MPI_LIBRARIES})
+endif()
+
 if(ENABLE_CYCLOPS)
     find_library(CYCLOPS_LIB NAMES ctf PATHS ${CYCLOPS} "${CYCLOPS}/lib/")
     find_library(El_LIB El ${ELEMENTAL})
     find_library(PMRRR_LIB pmrrr "${ELEMENTAL}/external/pmrrr")
-    target_link_libraries(ambit ${CYCLOPS_LIB} ${El_LIB} ${PMRRR_LIB} ${MPI_LIBRARIES})
+    target_link_libraries(ambit ${CYCLOPS_LIB} ${El_LIB} ${PMRRR_LIB})
 endif()
 
 if(ENABLE_GA)
     execute_process(COMMAND ${GA}/bin/ga-config -flibs OUTPUT_VARIABLE GA_FLIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${GA}/bin/ga-config -ldflags OUTPUT_VARIABLE GA_LDFLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${GA}/bin/ga-config -libs OUTPUT_VARIABLE GA_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    target_link_libraries(ambit ${GA_FLIBS} ${GA_LDFLAGS} ${GA_LIBS} ${MPI_LIBRARIES})
+    target_link_libraries(ambit ${GA_FLIBS} ${GA_LDFLAGS} ${GA_LIBS})
 endif()
 
 target_link_libraries(ambit ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${Boost_LIBRARIES} ${EXTERNAL_LIBS})

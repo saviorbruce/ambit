@@ -901,7 +901,7 @@ int main(int argc, char* argv[])
 {
     printf(ANSI_COLOR_RESET);
     srand (time(nullptr));
-    ambit::settings::debug = true;
+//    ambit::settings::debug = true;
     ambit::initialize(argc, argv);
 
     bool success;
