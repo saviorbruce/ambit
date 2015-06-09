@@ -882,7 +882,7 @@ void slice(
 
             // find location on global array
             int lo[C->rank()], hi[C->rank()];
-            for (int ind = 0; ind < C->rank(); ind++) {
+            for (int ind = 0; ind < C->rank(); ++ind) {
                 lo[ind] = Cinds[ind][0];
                 hi[ind] = Cinds[ind][1]-1;
             }

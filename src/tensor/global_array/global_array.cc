@@ -87,7 +87,6 @@ GlobalArrayImpl::~GlobalArrayImpl()
 {
     if (ga_rank == 0) return;
     GA_Destroy(global_array_);
-//    delete global_array_;
 }
 
 double GlobalArrayImpl::norm(int type) const
