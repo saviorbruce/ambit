@@ -107,9 +107,10 @@ void hf()
 
     Tensor F = build("F", AO2);
 
-//    // Build 2<pq|rs>-<pr|qs>
-//    Tensor g2_g = build("2<pq|rs>-<pr|qs>", AO4);
-//    g2_g("mu,nu,rho,sigma") = 2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma");
+    // Build 2<pq|rs>-<pr|qs>
+    Tensor g2_g = build("2<pq|rs>-<pr|qs>", AO4);
+
+    g2_g("μ,ν,ρ,σ") = 2.0 * g("μ,ν,ρ,σ") - g("μ,ρ,ν,σ");
 
 
     // start SCF iteration
@@ -119,9 +120,17 @@ void hf()
     do {
         ambit::timer::timer_push("HF iteration");
 
-        F("mu,nu") = H("mu,nu");
-        F("mu,nu") += D("rho,sigma") * (2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));
-//        F("mu,nu") += D("rho,sigma") * g2_g("mu,nu,rho,sigma");
+//        F("mu,nu") = H("mu,nu");
+//        F("mu,nu") += D("rho,sigma") * (2.0 * g("mu,nu,rho,sigma") - g("mu,rho,nu,sigma"));
+
+        F("μ,ν") = H("μ,ν");
+        F("μ,ν") += D("ρ,σ") * g2_g("μ,ν,ρ,σ");
+
+//        μνρσ
+
+        F("μ,ν") = H("μ,ν");
+        F("μ,ν") += D("ρ,σ") * (2.0 * g("μ,ν,ρ,σ") - g("μ,ρ,ν,σ"));
+
 
         // Calculate energy
         Eelec = D("mu,nu") * (H("mu,nu") + F("mu,nu"));
