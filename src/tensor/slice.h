@@ -15,70 +15,37 @@
 
 namespace ambit {
 
-void slice(
-    TensorImplPtr C,
-    ConstTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(TensorImplPtr C, ConstTensorImplPtr A, const IndexRange &Cinds,
+           const IndexRange &Ainds, double alpha = 1.0, double beta = 0.0);
 
-void slice(
-    CoreTensorImplPtr C,
-    ConstCoreTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(CoreTensorImplPtr C, ConstCoreTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
-void slice(
-    CoreTensorImplPtr C,
-    ConstDiskTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(CoreTensorImplPtr C, ConstDiskTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
-void slice(
-    DiskTensorImplPtr C,
-    ConstCoreTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(DiskTensorImplPtr C, ConstCoreTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
-void slice(
-    DiskTensorImplPtr C,
-    ConstDiskTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(DiskTensorImplPtr C, ConstDiskTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
 #ifdef HAVE_CYCLOPS
-void slice(
-    CoreTensorImplPtr C,
-    ConstCyclopsTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(CoreTensorImplPtr C, ConstCyclopsTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
-void slice(
-    CyclopsTensorImplPtr C,
-    ConstCoreTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(CyclopsTensorImplPtr C, ConstCoreTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 
-void slice(
-    CyclopsTensorImplPtr C,
-    ConstCyclopsTensorImplPtr A,
-    const IndexRange& Cinds,
-    const IndexRange& Ainds,
-    double alpha = 1.0,
-    double beta = 0.0);
+void slice(CyclopsTensorImplPtr C, ConstCyclopsTensorImplPtr A,
+           const IndexRange &Cinds, const IndexRange &Ainds, double alpha = 1.0,
+           double beta = 0.0);
 #endif
 
 #ifdef HAVE_GA

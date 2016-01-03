@@ -43,12 +43,23 @@ option(ENABLE_AUTO_BLAS     "Enable CMake to autodetect BLAS" ON)
 option(ENABLE_AUTO_LAPACK   "Enable CMake to autodetect LAPACK" ON)
 option(ENABLE_ACCELERATE    "Enable use of Mac OS X Accelerate Framework" OFF)
 option(ENABLE_PYTHON        "Enable Python interface" ON)
-option(ENABLE_CXX11_SUPPORT "Enable C++11 compiler support" ON)
+#option(ENABLE_CXX11_SUPPORT "Enable C++11 compiler support" ON)
 
 option(CYCLOPS              "Location of the Cyclops build directory" "")
 option(ELEMENTAL            "Location of the Elemental build directory" "")
 option(ENABLE_GA            "Enable Global Array Implementation" OFF)
 option(GA                   "Location of the Global Array directory" "")
+option(ENABLE_PSI4          "Enables PSI4 interface." OFF)
+
+include(CMakeDependentOption)
+cmake_dependent_option(
+        PSI4_SOURCE_DIR     "PSI4 source directory" ""
+        "ENABLE_PSI4"       ON)
+cmake_dependent_option(
+        PSI4_BINARY_DIR     "PSI4 objdir directory" ""
+        "ENABLE_PSI4"       ON)
+
+>>>>>>> jturney/master
 
 # include cmake modules as needed
 include(ConfigVersion)
@@ -57,9 +68,9 @@ include(ConfigCompilerFlags)
 include(ConfigOMP)
 
 # Math: find BLAS and LAPACK
-set(BLAS_LANG   "CXX")
-set(BLAS_FOUND FALSE)
-set(LAPACK_LANG "CXX")
+set(BLAS_LANG    "CXX")
+set(BLAS_FOUND   FALSE)
+set(LAPACK_LANG  "CXX")
 set(LAPACK_FOUND FALSE)
 set(MKL_COMPILER_BINDINGS "${CMAKE_CXX_COMPILER_ID}")
 include(ConfigMath)
@@ -113,6 +124,16 @@ endif()
 if (ENABLE_GA AND GA)
     include_directories(${GA}/include)
     add_definitions(-DHAVE_GA)
+endif()
+
+if (ENABLE_PSI4 AND PSI4_SOURCE_DIR AND PSI4_BINARY_DIR)
+    add_definitions(-DENABLE_PSI4=1)
+    include_directories(
+            ${PSI4_SOURCE_DIR}/include
+            ${PSI4_SOURCE_DIR}/src/lib
+            ${PSI4_BINARY_DIR}/include
+            ${PSI4_BINARY_DIR}/src/lib
+    )
 endif()
 
 # library directory
